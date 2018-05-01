@@ -1,0 +1,22 @@
+{
+  "batch_size": 32,
+  "epochs": 100,
+  "learning_rate": 0.001,
+  "max_context_length": 400,
+  "max_question_length": 30,
+  "max_word_length": 16,
+  "char_vocab_size": 24117,
+  "char_emb_dim": 8,
+  "char_dim": 200,
+  "char_conv_filter_size": 5,
+  "highway_num_layers": 2,
+  "dim": 128,
+  "embedding_encoder_filter_size": 7,
+  "embedding_encoder_num_conv_layers": 4,
+  "embedding_encoder_num_blocks": 1,
+  "embedding_encoder_num_heads": 1,
+  "model_encoder_filter_size": 5,
+  "model_encoder_num_conv_layers": 2,
+  "model_encoder_num_blocks": 1,
+  "model_encoder_num_heads": 1
+}

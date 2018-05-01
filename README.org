@@ -1,0 +1,36 @@
+#+TITLE: keras-QANet
+
+** データの作成
+
+前もって [[https://www.kaggle.com/thanakomsn/glove6b300dtxt/version/1#_=_][glove.6B.300d.txt]] をword2vecディレクトリの下にダウンロードして保存しておく。
+
+1min20sec
+
+** メモ
+
+gensim直接使うのはとりあえずやめておく
+
+trainデータに含まれている単語について辞書を作る
+で、keras側でEmbeddingをもつ
+辞書に対応するようにword2vecからvectorを引っ張り出して、numpy arrayを作る
+
+tokenize
+
+you'veは別れてたけどbuild-inは別れていない
+
+normalize
+  少なくとも大文字は入っていない
+
+trainもevaluateしたい？？？
+
+evaluationはid=>答えの文字列のリストとdataを引数にとってemを計算してくれる
+
+devの場合はshuffle Falseでpredictして、該当箇所を引っ張り出してidと紐付けてevaluation用のデータを作る
+kerasのCallbackでevaluationする
+
+preprocessorは今想定しているoutputはやはり出しておきたい
+
+trainでは146個のqaペアが答えを見つけられない、頭20個を調べるといずれもデータが壊れている
+
+mask? maskは必要、でもpaddingするときに入れるから前処理ではやらない
+
