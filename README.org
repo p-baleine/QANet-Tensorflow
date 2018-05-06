@@ -58,3 +58,7 @@ make train
 #+BEGIN_SRC bash
 make evaluate
 #+END_SRC
+
+** TODO
+
+- [ ] Dropout
