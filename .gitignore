@@ -4,6 +4,10 @@ __pycache__
 data/*
 hparams/*
 word2vec/*
+notebooks/memo/*
+
+notebooks/logs/*/events.out.tfevents.*
+notebooks/logs/*/weights.*
 
 !hparams/default.json
 !.gitkeep

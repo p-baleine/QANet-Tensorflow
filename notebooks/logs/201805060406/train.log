@@ -1,0 +1,217 @@
+2018-05-06 04:06:14,935 - __main__ - INFO - Loading data...
+2018-05-06 04:06:14,935 - __main__ - INFO - Hyper parameters:
+2018-05-06 04:06:14,935 - __main__ - INFO - {
+  "char_vocab_size": 24117,
+  "batch_size": 32,
+  "embedding_encoder_num_blocks": 1,
+  "embedding_encoder_num_conv_layers": 4,
+  "highway_num_layers": 2,
+  "embedding_encoder_num_heads": 1,
+  "max_question_length": 30,
+  "model_encoder_filter_size": 5,
+  "char_emb_dim": 8,
+  "learning_rate": 0.001,
+  "model_encoder_num_heads": 1,
+  "epochs": 100,
+  "char_conv_filter_size": 5,
+  "model_encoder_num_conv_layers": 2,
+  "char_dim": 200,
+  "embedding_encoder_filter_size": 7,
+  "model_encoder_num_blocks": 1,
+  "max_context_length": 400,
+  "max_word_length": 16,
+  "dim": 128
+}
+2018-05-06 04:06:15,292 - qanet.data_utils - INFO - Preprocessing data...
+2018-05-06 04:06:15,292 - qanet.data_utils - WARNING - Take away datum due to too long question, Super_Bowl_50, 56bf53e73aeaaa14008c95ce
+2018-05-06 04:06:15,292 - qanet.data_utils - INFO - 1 data filtered, total data size: 1056
+2018-05-06 04:06:15,897 - qanet.data_utils - INFO - Preprocessing data...
+2018-05-06 04:06:15,897 - qanet.data_utils - WARNING - Take away datum due to too long question, Super_Bowl_50, 56bf53e73aeaaa14008c95ce
+2018-05-06 04:06:15,897 - qanet.data_utils - INFO - 1 data filtered, total data size: 1056
+2018-05-06 04:06:16,490 - __main__ - INFO - Preparing model...
+/usr/local/lib/python3.5/dist-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+WARNING:tensorflow:From /qanet/qanet/layers/wrappers.py:26: calling reduce_mean (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+2018-05-06 04:06:17,450 - qanet.model_utils - INFO - Model created freshly.
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+input_1 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_2 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_3 (InputLayer)            (None, 400, 16)      0                                            
+__________________________________________________________________________________________________
+input_5 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+input_6 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+input_7 (InputLayer)            (None, 30, 16)       0                                            
+__________________________________________________________________________________________________
+word_embedding_1 (WordEmbedding multiple             1029900     input_1[0][0]                    
+                                                                 input_2[0][0]                    
+                                                                 input_5[0][0]                    
+                                                                 input_6[0][0]                    
+__________________________________________________________________________________________________
+character_embedding_1 (Characte multiple             201136      input_3[0][0]                    
+                                                                 input_7[0][0]                    
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 400, 500)     0           word_embedding_1[0][0]           
+                                                                 character_embedding_1[0][0]      
+__________________________________________________________________________________________________
+concatenate_2 (Concatenate)     (None, 30, 500)      0           word_embedding_1[1][0]           
+                                                                 character_embedding_1[1][0]      
+__________________________________________________________________________________________________
+highway_network_1 (HighwayNetwo (None, 400, 500)     1002000     concatenate_1[0][0]              
+__________________________________________________________________________________________________
+highway_network_2 (HighwayNetwo (None, 30, 500)      1002000     concatenate_2[0][0]              
+__________________________________________________________________________________________________
+expand_dims_1 (ExpandDims)      (None, 1, 400, 500)  0           highway_network_1[0][0]          
+__________________________________________________________________________________________________
+expand_dims_2 (ExpandDims)      (None, 1, 30, 500)   0           highway_network_2[0][0]          
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               multiple             448128      expand_dims_1[0][0]              
+                                                                 expand_dims_2[0][0]              
+__________________________________________________________________________________________________
+reshape_1 (Reshape)             (None, 400, 128)     0           conv2d_1[0][0]                   
+__________________________________________________________________________________________________
+reshape_2 (Reshape)             (None, 30, 128)      0           conv2d_1[1][0]                   
+__________________________________________________________________________________________________
+encoder_1 (Encoder)             multiple             86144       reshape_1[0][0]                  
+                                                                 reshape_2[0][0]                  
+__________________________________________________________________________________________________
+input_4 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_8 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+similarity_maxtirx_1 (Similarit (None, 400, 30)      384         encoder_1[0][0]                  
+                                                                 encoder_1[1][0]                  
+                                                                 input_4[0][0]                    
+                                                                 input_8[0][0]                    
+__________________________________________________________________________________________________
+lambda_1 (Lambda)               (None, 400, 30)      0           similarity_maxtirx_1[0][0]       
+__________________________________________________________________________________________________
+lambda_2 (Lambda)               (None, 400, 30)      0           similarity_maxtirx_1[0][0]       
+__________________________________________________________________________________________________
+context_query_attention_1 (Cont (None, 400, 128)     0           lambda_1[0][0]                   
+                                                                 encoder_1[1][0]                  
+__________________________________________________________________________________________________
+query_context_attention_1 (Quer (None, 400, 128)     0           lambda_1[0][0]                   
+                                                                 lambda_2[0][0]                   
+                                                                 encoder_1[0][0]                  
+__________________________________________________________________________________________________
+multiply_1 (Multiply)           (None, 400, 128)     0           encoder_1[0][0]                  
+                                                                 context_query_attention_1[0][0]  
+__________________________________________________________________________________________________
+multiply_2 (Multiply)           (None, 400, 128)     0           encoder_1[0][0]                  
+                                                                 query_context_attention_1[0][0]  
+__________________________________________________________________________________________________
+concatenate_3 (Concatenate)     (None, 400, 512)     0           encoder_1[0][0]                  
+                                                                 context_query_attention_1[0][0]  
+                                                                 multiply_1[0][0]                 
+                                                                 multiply_2[0][0]                 
+__________________________________________________________________________________________________
+encoder_2 (Encoder)             (None, 400, 512)     793088      concatenate_3[0][0]              
+                                                                 encoder_2[0][0]                  
+                                                                 encoder_2[1][0]                  
+__________________________________________________________________________________________________
+position_prediction_1 (Position (None, 400)          1024        encoder_2[0][0]                  
+                                                                 encoder_2[1][0]                  
+                                                                 input_4[0][0]                    
+__________________________________________________________________________________________________
+position_prediction_2 (Position (None, 400)          1024        encoder_2[0][0]                  
+                                                                 encoder_2[2][0]                  
+                                                                 input_4[0][0]                    
+==================================================================================================
+Total params: 4,564,828
+Trainable params: 3,535,228
+Non-trainable params: 1,029,600
+__________________________________________________________________________________________________
+skip []
+Tensor("position_prediction_1_target:0", shape=(?, ?), dtype=float32)
+Tensor("position_prediction/Softmax:0", shape=(?, 400), dtype=float32)
+None
+Tensor("position_prediction_2_target:0", shape=(?, ?), dtype=float32)
+Tensor("position_prediction_1/Softmax:0", shape=(?, 400), dtype=float32)
+None
+2018-05-06 04:06:17,504 - __main__ - INFO - Start training.
+2018-05-06 04:06:19.818743: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-05-06 04:06:19.949149: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:898] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2018-05-06 04:06:19.949627: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1356] Found device 0 with properties: 
+name: GeForce GTX 1080 major: 6 minor: 1 memoryClockRate(GHz): 1.7335
+pciBusID: 0000:01:00.0
+totalMemory: 7.92GiB freeMemory: 7.74GiB
+2018-05-06 04:06:20.057824: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:898] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2018-05-06 04:06:20.058380: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1356] Found device 1 with properties: 
+name: GeForce GTX 1080 major: 6 minor: 1 memoryClockRate(GHz): 1.7335
+pciBusID: 0000:03:00.0
+totalMemory: 7.93GiB freeMemory: 7.81GiB
+2018-05-06 04:06:20.058979: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1435] Adding visible gpu devices: 0, 1
+2018-05-06 04:06:20.389602: I tensorflow/core/common_runtime/gpu/gpu_device.cc:923] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-05-06 04:06:20.389633: I tensorflow/core/common_runtime/gpu/gpu_device.cc:929]      0 1 
+2018-05-06 04:06:20.389639: I tensorflow/core/common_runtime/gpu/gpu_device.cc:942] 0:   N Y 
+2018-05-06 04:06:20.389642: I tensorflow/core/common_runtime/gpu/gpu_device.cc:942] 1:   Y N 
+2018-05-06 04:06:20.389934: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1053] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 7477 MB memory) -> physical GPU (device: 0, name: GeForce GTX 1080, pci bus id: 0000:01:00.0, compute capability: 6.1)
+2018-05-06 04:06:20.415446: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1053] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 7541 MB memory) -> physical GPU (device: 1, name: GeForce GTX 1080, pci bus id: 0000:03:00.0, compute capability: 6.1)
+Epoch 1/100
+ - 18s - loss: 4.6571 - position_prediction_1_loss: 4.4710 - position_prediction_2_loss: 4.8432 - position_prediction_1_acc: 0.0597 - position_prediction_2_acc: 0.0616 - val_loss: 3.4610 - val_position_prediction_1_loss: 3.4229 - val_position_prediction_2_loss: 3.4991 - val_position_prediction_1_acc: 0.1534 - val_position_prediction_2_acc: 0.1402
+Epoch 2/100
+ - 17s - loss: 3.5763 - position_prediction_1_loss: 3.5208 - position_prediction_2_loss: 3.6317 - position_prediction_1_acc: 0.1364 - position_prediction_2_acc: 0.1269 - val_loss: 3.1207 - val_position_prediction_1_loss: 3.0966 - val_position_prediction_2_loss: 3.1447 - val_position_prediction_1_acc: 0.1866 - val_position_prediction_2_acc: 0.1761
+Epoch 3/100
+ - 17s - loss: 3.1714 - position_prediction_1_loss: 3.1152 - position_prediction_2_loss: 3.2277 - position_prediction_1_acc: 0.1856 - position_prediction_2_acc: 0.1761 - val_loss: 2.8278 - val_position_prediction_1_loss: 2.7710 - val_position_prediction_2_loss: 2.8846 - val_position_prediction_1_acc: 0.2282 - val_position_prediction_2_acc: 0.1922
+Epoch 4/100
+ - 17s - loss: 2.7818 - position_prediction_1_loss: 2.7504 - position_prediction_2_loss: 2.8131 - position_prediction_1_acc: 0.2235 - position_prediction_2_acc: 0.2443 - val_loss: 2.4717 - val_position_prediction_1_loss: 2.4547 - val_position_prediction_2_loss: 2.4886 - val_position_prediction_1_acc: 0.3097 - val_position_prediction_2_acc: 0.2907
+Epoch 5/100
+
+Epoch 00005: saving model to /tmp/qanet/201805060406/weights.05-2.15.hdf5
+ - 18s - loss: 2.4448 - position_prediction_1_loss: 2.4389 - position_prediction_2_loss: 2.4507 - position_prediction_1_acc: 0.2973 - position_prediction_2_acc: 0.3021 - val_loss: 2.1464 - val_position_prediction_1_loss: 2.1560 - val_position_prediction_2_loss: 2.1368 - val_position_prediction_1_acc: 0.3561 - val_position_prediction_2_acc: 0.3513
+Epoch 6/100
+ - 17s - loss: 2.2031 - position_prediction_1_loss: 2.2050 - position_prediction_2_loss: 2.2012 - position_prediction_1_acc: 0.3456 - position_prediction_2_acc: 0.3561 - val_loss: 1.9182 - val_position_prediction_1_loss: 1.9613 - val_position_prediction_2_loss: 1.8751 - val_position_prediction_1_acc: 0.4148 - val_position_prediction_2_acc: 0.4309
+Epoch 7/100
+ - 17s - loss: 1.9194 - position_prediction_1_loss: 1.9284 - position_prediction_2_loss: 1.9105 - position_prediction_1_acc: 0.4242 - position_prediction_2_acc: 0.4347 - val_loss: 1.5712 - val_position_prediction_1_loss: 1.5414 - val_position_prediction_2_loss: 1.6010 - val_position_prediction_1_acc: 0.5085 - val_position_prediction_2_acc: 0.5114
+Epoch 8/100
+ - 17s - loss: 1.5521 - position_prediction_1_loss: 1.5199 - position_prediction_2_loss: 1.5843 - position_prediction_1_acc: 0.5256 - position_prediction_2_acc: 0.5294 - val_loss: 1.2877 - val_position_prediction_1_loss: 1.2513 - val_position_prediction_2_loss: 1.3241 - val_position_prediction_1_acc: 0.6023 - val_position_prediction_2_acc: 0.5852
+Epoch 9/100
+ - 17s - loss: 1.1926 - position_prediction_1_loss: 1.1905 - position_prediction_2_loss: 1.1946 - position_prediction_1_acc: 0.6108 - position_prediction_2_acc: 0.6269 - val_loss: 1.2104 - val_position_prediction_1_loss: 1.1908 - val_position_prediction_2_loss: 1.2300 - val_position_prediction_1_acc: 0.6402 - val_position_prediction_2_acc: 0.6335
+Epoch 10/100
+
+Epoch 00010: saving model to /tmp/qanet/201805060406/weights.10-0.79.hdf5
+ - 18s - loss: 0.9777 - position_prediction_1_loss: 0.9587 - position_prediction_2_loss: 0.9968 - position_prediction_1_acc: 0.6922 - position_prediction_2_acc: 0.6941 - val_loss: 0.7852 - val_position_prediction_1_loss: 0.7918 - val_position_prediction_2_loss: 0.7785 - val_position_prediction_1_acc: 0.7670 - val_position_prediction_2_acc: 0.7652
+Epoch 11/100
+ - 17s - loss: 0.8054 - position_prediction_1_loss: 0.7855 - position_prediction_2_loss: 0.8253 - position_prediction_1_acc: 0.7557 - position_prediction_2_acc: 0.7519 - val_loss: 0.9051 - val_position_prediction_1_loss: 0.9344 - val_position_prediction_2_loss: 0.8758 - val_position_prediction_1_acc: 0.7045 - val_position_prediction_2_acc: 0.7225
+Epoch 12/100
+ - 17s - loss: 0.6815 - position_prediction_1_loss: 0.6580 - position_prediction_2_loss: 0.7050 - position_prediction_1_acc: 0.7926 - position_prediction_2_acc: 0.7898 - val_loss: 0.5987 - val_position_prediction_1_loss: 0.6110 - val_position_prediction_2_loss: 0.5864 - val_position_prediction_1_acc: 0.8239 - val_position_prediction_2_acc: 0.8466
+Epoch 13/100
+ - 18s - loss: 0.5253 - position_prediction_1_loss: 0.5324 - position_prediction_2_loss: 0.5182 - position_prediction_1_acc: 0.8248 - position_prediction_2_acc: 0.8428 - val_loss: 0.4358 - val_position_prediction_1_loss: 0.4313 - val_position_prediction_2_loss: 0.4403 - val_position_prediction_1_acc: 0.8665 - val_position_prediction_2_acc: 0.8598
+Epoch 14/100
+ - 18s - loss: 0.4950 - position_prediction_1_loss: 0.4710 - position_prediction_2_loss: 0.5191 - position_prediction_1_acc: 0.8608 - position_prediction_2_acc: 0.8324 - val_loss: 0.4689 - val_position_prediction_1_loss: 0.4556 - val_position_prediction_2_loss: 0.4822 - val_position_prediction_1_acc: 0.8655 - val_position_prediction_2_acc: 0.8693
+Epoch 15/100
+
+Epoch 00015: saving model to /tmp/qanet/201805060406/weights.15-0.35.hdf5
+ - 18s - loss: 0.4824 - position_prediction_1_loss: 0.4725 - position_prediction_2_loss: 0.4924 - position_prediction_1_acc: 0.8665 - position_prediction_2_acc: 0.8693 - val_loss: 0.3468 - val_position_prediction_1_loss: 0.3426 - val_position_prediction_2_loss: 0.3511 - val_position_prediction_1_acc: 0.9044 - val_position_prediction_2_acc: 0.8987
+Epoch 16/100
+ - 17s - loss: 0.4250 - position_prediction_1_loss: 0.4510 - position_prediction_2_loss: 0.3989 - position_prediction_1_acc: 0.8741 - position_prediction_2_acc: 0.8845 - val_loss: 0.3762 - val_position_prediction_1_loss: 0.3849 - val_position_prediction_2_loss: 0.3674 - val_position_prediction_1_acc: 0.8958 - val_position_prediction_2_acc: 0.8920
+Epoch 17/100
+ - 17s - loss: 0.3817 - position_prediction_1_loss: 0.3976 - position_prediction_2_loss: 0.3659 - position_prediction_1_acc: 0.8797 - position_prediction_2_acc: 0.8968 - val_loss: 0.4396 - val_position_prediction_1_loss: 0.4562 - val_position_prediction_2_loss: 0.4230 - val_position_prediction_1_acc: 0.8731 - val_position_prediction_2_acc: 0.8778
+Epoch 18/100
+ - 17s - loss: 0.3201 - position_prediction_1_loss: 0.3119 - position_prediction_2_loss: 0.3283 - position_prediction_1_acc: 0.8977 - position_prediction_2_acc: 0.9053 - val_loss: 0.2589 - val_position_prediction_1_loss: 0.2753 - val_position_prediction_2_loss: 0.2425 - val_position_prediction_1_acc: 0.9223 - val_position_prediction_2_acc: 0.9299
+Epoch 19/100
+ - 18s - loss: 0.2583 - position_prediction_1_loss: 0.2416 - position_prediction_2_loss: 0.2750 - position_prediction_1_acc: 0.9252 - position_prediction_2_acc: 0.9157 - val_loss: 0.3456 - val_position_prediction_1_loss: 0.3550 - val_position_prediction_2_loss: 0.3363 - val_position_prediction_1_acc: 0.8987 - val_position_prediction_2_acc: 0.9072
+Epoch 20/100
+
+Epoch 00020: saving model to /tmp/qanet/201805060406/weights.20-0.22.hdf5
+ - 18s - loss: 0.2504 - position_prediction_1_loss: 0.2491 - position_prediction_2_loss: 0.2517 - position_prediction_1_acc: 0.9176 - position_prediction_2_acc: 0.9280 - val_loss: 0.2186 - val_position_prediction_1_loss: 0.2086 - val_position_prediction_2_loss: 0.2286 - val_position_prediction_1_acc: 0.9356 - val_position_prediction_2_acc: 0.9413
+Epoch 21/100
+ - 17s - loss: 0.2055 - position_prediction_1_loss: 0.1997 - position_prediction_2_loss: 0.2113 - position_prediction_1_acc: 0.9347 - position_prediction_2_acc: 0.9394 - val_loss: 0.2182 - val_position_prediction_1_loss: 0.2310 - val_position_prediction_2_loss: 0.2053 - val_position_prediction_1_acc: 0.9366 - val_position_prediction_2_acc: 0.9394
+Epoch 22/100
+ - 17s - loss: 0.2166 - position_prediction_1_loss: 0.2161 - position_prediction_2_loss: 0.2171 - position_prediction_1_acc: 0.9403 - position_prediction_2_acc: 0.9356 - val_loss: 0.1956 - val_position_prediction_1_loss: 0.1830 - val_position_prediction_2_loss: 0.2083 - val_position_prediction_1_acc: 0.9527 - val_position_prediction_2_acc: 0.9545
+Epoch 23/100
+ - 17s - loss: 0.2543 - position_prediction_1_loss: 0.2380 - position_prediction_2_loss: 0.2707 - position_prediction_1_acc: 0.9384 - position_prediction_2_acc: 0.9290 - val_loss: 0.2190 - val_position_prediction_1_loss: 0.1828 - val_position_prediction_2_loss: 0.2553 - val_position_prediction_1_acc: 0.9555 - val_position_prediction_2_acc: 0.9299
+Epoch 24/100
+ - 18s - loss: 0.1661 - position_prediction_1_loss: 0.1508 - position_prediction_2_loss: 0.1815 - position_prediction_1_acc: 0.9612 - position_prediction_2_acc: 0.9555 - val_loss: 0.1613 - val_position_prediction_1_loss: 0.1522 - val_position_prediction_2_loss: 0.1703 - val_position_prediction_1_acc: 0.9583 - val_position_prediction_2_acc: 0.9536
+Epoch 25/100
+
+Epoch 00025: saving model to /tmp/qanet/201805060406/weights.25-0.20.hdf5
+ - 18s - loss: 0.2022 - position_prediction_1_loss: 0.1914 - position_prediction_2_loss: 0.2130 - position_prediction_1_acc: 0.9413 - position_prediction_2_acc: 0.9347 - val_loss: 0.2041 - val_position_prediction_1_loss: 0.2158 - val_position_prediction_2_loss: 0.1924 - val_position_prediction_1_acc: 0.9621 - val_position_prediction_2_acc: 0.9574

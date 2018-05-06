@@ -73,13 +73,13 @@ def main(data, hparams, save_path):
         callbacks=[
             tf.keras.callbacks.TerminateOnNaN(),
             tf.keras.callbacks.TensorBoard(
-                save_path,
-                batch_size=hparams.batch_size,
-                histogram_freq=1),
+                save_path),
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=checkpoint_file_path,
                 period=5,
                 verbose=1),
+            tf.keras.callbacks.CSVLogger(
+                os.path.join(save_path, 'progress.csv'))
         ])
 
 if __name__ == '__main__':
