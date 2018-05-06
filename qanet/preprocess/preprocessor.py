@@ -102,6 +102,7 @@ class Preprocessor(object):
                 # 答えが無かったら無視
                 logger.warn('The question dose not have answers, '
                             'article_title: {}, id: {}'.format(title, id))
+                continue
 
             output.append(TransformedOutput(
                 id=id,
