@@ -1,3 +1,4 @@
+# データの準備
 # TRAIN_DATA ?= data/train-v1.1.json
 # DEV_DATA ?= data/dev-v1.1.json
 TRAIN_DATA ?= data/dev-v1.1.json
@@ -9,14 +10,20 @@ PREPROCESSED_TRAIN_DATA = $(DATA_SAVE_DIR)/train.json
 PREPROCESSED_DEV_DATA = $(DATA_SAVE_DIR)/dev.json
 GLOVE_WORD2VEC = word2vec/glove.6B.300d.word2vec.bin
 
+# 学習
 # デフォルトでは最新のデータディレクトリ
 TRAIN_DATA_DIR = $(shell ls -d data/preprocessed_*  | sort | tail -n 1)
 HPARAMS_PATH = hparams/default.json
 LOG_DIR = /tmp/qanet/$(shell date +'%Y%m%d%H%M')
 
+# 評価
+EVAL_DATA_DIR = $(shell ls -d data/preprocessed_* | sort | tail -n 1)
+EVAL_LOG_DIR = $(shell ls -d /tmp/qanet/* | sort | tail -n 1)
+EVAL_WEIGHTS_FILE = $(shell ls $(EVAL_LOG_DIR)/weights.* | sort -V | tail -n 1)
+
 all: $(PREPROCESSED_TRAIN_DATA) $(PREPROCESSED_DEV_DATA)
 
-$(PREPROCESSED_TRAIN_DATA): $(TRAIN_DATA) $(DEV_DATA) $(GLOVE_WORD2VEC)
+$(PREPROCESSED_TRAIN_DATA): $(TRAIN_DATA) $(GLOVE_WORD2VEC) # $(DEV_DATA) 
 	mkdir -p $(DATA_SAVE_DIR) && \
 		python -u -m scripts.preprocess_data \
 			--train-data $(TRAIN_DATA) \
@@ -36,6 +43,13 @@ train:
 			--hparams $(HPARAMS_PATH) \
 			--save-path $(LOG_DIR) 2>&1 \
 		| tee $(LOG_DIR)/train.log
+
+evaluate:
+	python -m scripts.evaluate \
+		--data $(EVAL_DATA_DIR) \
+		--raw-data-file $(DEV_DATA) \
+		--save-path $(EVAL_LOG_DIR) \
+		--weights-file $(EVAL_WEIGHTS_FILE)
 
 test:
 	nosetests

@@ -11,7 +11,9 @@
 """
 
 import click
+import json
 import logging
+import numpy as np
 import os
 import sys
 
@@ -23,14 +25,16 @@ import squad
 from qanet import SQuADSequence
 from qanet import create_or_load_model
 from qanet import load_data, load_embedding, load_hparams
+from qanet.preprocess import expand_article
+from qanet.preprocess import Preprocessor
 
-logger = logging.getLogger(__main__)
+logger = logging.getLogger(__name__)
 
 @click.command()
 @click.option('--data', type=click.Path())
-@click.option('--raw-data-file', type=click.File())
 @click.option('--save-path', type=click.Path(exists=True))
 @click.option('--weights-file', type=click.Path(exists=True))
+@click.option('--raw-data-file', type=click.File())
 def main(data, raw_data_file, save_path, weights_file):
     hparams = load_hparams(os.path.join(save_path, 'hparams.json'))
 
@@ -50,22 +54,30 @@ def main(data, raw_data_file, save_path, weights_file):
         max_question_length=hparams.max_question_length,
         max_word_length=hparams.max_word_length)
 
+    # TODO ファイル名指定しなくてもrestoreできるようにする
+    processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
+
     logger.info('Preparing model...')
 
     model = create_or_load_model(hparams, embedding, save_path,
                                  resume_from=weights_file)
 
-    # TODO ここからどうやって答えの文字列引っ張り出すか？？？
-    # 違うか、processor.reverseなんとか呼べばよいのか
     predictions = model.predict(dev_gen.valid_data.x)
+    raw_dataset = json.load(raw_data_file)['data']
+
+    print(json.dumps(squad.evaluate(
+        raw_dataset, prediction_mapping(predictions, dev_gen, processor))))
+
+def prediction_mapping(predictions, dev_gen, processor):
+    predictions = zip(np.argmax(predictions[0], axis=1),
+                      np.argmax(predictions[1], axis=1))
     prediction_mapping = dict(
-        (id, y_) for id, y_ in zip(dev_gen.valid_data.ids, predictions))
-    prediction_mapping.update(dict(
-        (id, '' for id in dev_gen.invalid_data.ids)))
+        (id, ' '.join(processor.reverse_word_ids(x.context[start:end+1])))
+         for id, x, (start, end) in zip(dev_gen.valid_data.ids,
+                                        dev_gen.valid_data.raw_x,
+                                        predictions))
+    return prediction_mapping
 
-    raw_dataset = json.load(raw_data_file)
-
-    print(json.dumps(squad.evaluate(raw_dataset, predictions)))
 
 if __name__ == '__main__':
     main()

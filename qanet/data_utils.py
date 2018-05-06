@@ -47,7 +47,9 @@ class SQuADSequence(tf.keras.utils.Sequence):
         self._sort = sort
 
         logger.info('Preprocessing data...')
-        self._x_set, self._y_set = self._preprocess(data)
+        ids, self._x_set, self._y_set = self._preprocess(data)
+
+        self._valid_data = _ListedData(ids, self._x_set, self._y_set)
 
     def __len__(self):
         return int(np.ceil(len(self._x_set) / float(self._batch_size)))
@@ -91,6 +93,8 @@ class SQuADSequence(tf.keras.utils.Sequence):
             # batch the examples by length
             valid_data = sorted(valid_data, key=lambda d: len(d.x.context))
 
+        ids = [datum.id for datum in valid_data]
+
         x_set_ = [pad_datum(datum.x,
                             max_context_length=self._max_context_length,
                             max_question_length=self._max_question_length,
@@ -100,7 +104,14 @@ class SQuADSequence(tf.keras.utils.Sequence):
         y_set_ = [[datum.y_list[0].answer_start, datum.y_list[0].answer_end]
                   for datum in valid_data]
 
-        return x_set_, y_set_
+        return ids, x_set_, y_set_
+
+    @property
+    def valid_data(self):
+        """前処理でフィルタリングされなかったデータを返す
+        idとの紐づけが欲しい評価時用のプロパティ
+        """
+        return self._valid_data
 
 class PaddedDatum(namedtuple('PaddedDatum', [
         'context',
@@ -156,3 +167,22 @@ def pad_datum(datum,
         question_unk_label=pad(datum.question_unk_label, max_question_length),
         question_chars=pad_chars(datum.question_chars, max_question_length),
         question_mask=mask(datum.question, max_question_length))
+
+class _ListedData(object):
+    def __init__(self, ids, x, y):
+        self._ids = ids
+        self._x = x
+        self._y = y
+
+    @property
+    def ids(self):
+        return self._ids
+
+    @property
+    def x(self):
+        return [np.array([getattr(x_, f) for x_ in self._x])
+                for f in self._x[0]._fields]
+
+    @property
+    def raw_x(self):
+        return self._x

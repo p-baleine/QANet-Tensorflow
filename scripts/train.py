@@ -72,7 +72,10 @@ def main(data, hparams, save_path):
         shuffle=False,
         callbacks=[
             tf.keras.callbacks.TerminateOnNaN(),
-            tf.keras.callbacks.TensorBoard(save_path),
+            tf.keras.callbacks.TensorBoard(
+                save_path,
+                batch_size=hparams.batch_size,
+                histogram_freq=1),
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=checkpoint_file_path,
                 period=5,
