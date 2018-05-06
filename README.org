@@ -1,36 +1,60 @@
 #+TITLE: keras-QANet
 
-** データの作成
+An implementation of [[https://arxiv.org/abs/1804.09541][QANet]] with [[https://www.tensorflow.org/][Tensorflow]] and [[https://keras.io/][Keras]].
 
-前もって [[https://www.kaggle.com/thanakomsn/glove6b300dtxt/version/1#_=_][glove.6B.300d.txt]] をword2vecディレクトリの下にダウンロードして保存しておく。
+** Requirements
 
-1min20sec
+- Docker
+- [[https://github.com/NVIDIA/nvidia-docker][nvidia-docker]]
 
-** メモ
+** Usage
 
-gensim直接使うのはとりあえずやめておく
+*** Build container
 
-trainデータに含まれている単語について辞書を作る
-で、keras側でEmbeddingをもつ
-辞書に対応するようにword2vecからvectorを引っ張り出して、numpy arrayを作る
+First, clone this repository.
 
-tokenize
+#+BEGIN_SRC bash
+git clone https://github.com/p-baleine/keras-QANet.git
+#+END_SRC
 
-you'veは別れてたけどbuild-inは別れていない
+Then build the docker image.
 
-normalize
-  少なくとも大文字は入っていない
+#+BEGIN_SRC bash
+docker build -t qanet .
+#+END_SRC
 
-trainもevaluateしたい？？？
+The following instructions assume that you've logged in to this container. To log in to this continer, run:
 
-evaluationはid=>答えの文字列のリストとdataを引数にとってemを計算してくれる
+#+BEGIN_SRC bash
+docker run --rm --name qanet -it -v $(pwd):/qanet -p 6006:6006 -p 8888:8888 qanet
+#+END_SRC
 
-devの場合はshuffle Falseでpredictして、該当箇所を引っ張り出してidと紐付けてevaluation用のデータを作る
-kerasのCallbackでevaluationする
+*** Download data
 
-preprocessorは今想定しているoutputはやはり出しておきたい
+**** Glove
 
-trainでは146個のqaペアが答えを見つけられない、頭20個を調べるといずれもデータが壊れている
+Download and save [[https://www.kaggle.com/thanakomsn/glove6b300dtxt/version/1#_=_:][pre-trained Glove data]] in word2vec directory.
 
-mask? maskは必要、でもpaddingするときに入れるから前処理ではやらない
+**** SQuAD
 
+Download and save train-v1.1.json and dev-1.1.json in data directory from [[https://rajpurkar.github.io/SQuAD-explorer/][SQuAD]].
+
+*** Preprocessing data
+
+To preprocess data, run:
+
+#+BEGIN_SRC bash
+make
+#+END_SRC
+
+*** Training
+
+#+BEGIN_SRC bash
+make train
+#+END_SRC
+
+*** Evaluation
+
+#+BEGIN_SRC bash
+make evaluate
+#+END_SRC

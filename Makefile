@@ -1,7 +1,5 @@
 # データの準備
-# TRAIN_DATA ?= data/train-v1.1.json
-# DEV_DATA ?= data/dev-v1.1.json
-TRAIN_DATA ?= data/dev-v1.1.json
+TRAIN_DATA ?= data/train-v1.1.json
 DEV_DATA ?= data/dev-v1.1.json
 GLOVE ?= word2vec/glove.6B.300d.txt
 
