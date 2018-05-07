@@ -47,7 +47,7 @@ def main(train_data, dev_data, glove, out):
     logger.info('Vocabulary size of words: {}'.format(
         len(processor.word_dict)))
     logger.info('Vocabulary size of characters: {}'.format(
-        len(processor.word_dict)))
+        len(processor.char_dict)))
 
     logger.info('Transforming train data...')
     train_data = processor.transform(train_data)

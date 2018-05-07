@@ -1,4 +1,4 @@
-# データの準備
+# Variables for preprocessing.
 TRAIN_DATA ?= data/train-v1.1.json
 DEV_DATA ?= data/dev-v1.1.json
 GLOVE ?= word2vec/glove.6B.300d.txt
@@ -8,13 +8,13 @@ PREPROCESSED_TRAIN_DATA = $(DATA_SAVE_DIR)/train.json
 PREPROCESSED_DEV_DATA = $(DATA_SAVE_DIR)/dev.json
 GLOVE_WORD2VEC = word2vec/glove.6B.300d.word2vec.bin
 
-# 学習
-# デフォルトでは最新のデータディレクトリ
+# Variables for training.
+# Use latest directory as default.
 TRAIN_DATA_DIR = $(shell ls -d data/preprocessed_*  | sort | tail -n 1)
 HPARAMS_PATH = hparams/default.json
 LOG_DIR = /tmp/qanet/$(shell date +'%Y%m%d%H%M')
 
-# 評価
+# Variables for evaluation.
 EVAL_DATA_DIR = $(shell ls -d data/preprocessed_* | sort | tail -n 1)
 EVAL_LOG_DIR = $(shell ls -d /tmp/qanet/* | sort | tail -n 1)
 EVAL_WEIGHTS_FILE = $(shell ls $(EVAL_LOG_DIR)/weights.* | sort -V | tail -n 1)
