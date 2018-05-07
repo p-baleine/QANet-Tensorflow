@@ -15,10 +15,18 @@ class WordEmbedding(tf.keras.layers.Layer):
           dimはembedding_matrixのshape[1]
     """
 
-    def __init__(self, embeddind_matrix, **kwargs):
+    def __init__(self,
+                 embeddind_matrix,
+                 dropout_rate=0.0,
+                 is_training=True,
+                 regularizer=None,
+                 **kwargs):
         self._embedding_matrix = embeddind_matrix
         self._V = self._embedding_matrix.shape[0]
         self._dim = self._embedding_matrix.shape[1]
+        self._dropout_rate = dropout_rate
+        self._is_training = is_training
+        self._regularizer = regularizer
         super(WordEmbedding, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -38,6 +46,7 @@ class WordEmbedding(tf.keras.layers.Layer):
         self._W_unk = self.add_variable(
             'unk_embedding',
             [1, self._dim],
+            regularizer=self._regularizer,
             initializer=tf.contrib.layers.xavier_initializer())
 
         super(WordEmbedding, self).build(input_shape)
@@ -50,11 +59,13 @@ class WordEmbedding(tf.keras.layers.Layer):
 
         # (batch_size, N, dim)
         with tf.device('/cpu:0'):
-            return tf.where(
+            output = tf.where(
                 tf.tile(tf.expand_dims(word_unk_label, -1), [1, 1, self._dim]),
                 tf.nn.embedding_lookup(
                     self._W_unk, tf.zeros_like(word_unk_label, dtype=tf.int32)),
                 tf.nn.embedding_lookup(self._W, words))
+            return (tf.nn.dropout(output, 1. - self._dropout_rate)
+                    if self._is_training else output)
 
     def compute_output_shape(self, input_shape):
         word_shape, _ = input_shape
@@ -66,9 +77,12 @@ class CharacterEmbedding(tf.keras.layers.Layer):
                  emb_dim,
                  out_dim,
                  filter_size,
+                 dropout_rate=0.0,
+                 is_training=True,
                  embedding_initializer=tf.contrib.layers.xavier_initializer(),
                  conv_kernel_initializer=tf.contrib.layers.xavier_initializer(),
                  conv_bias_initializer=tf.zeros_initializer(),
+                 kernel_regularizer=None,
                  **kwargs):
         """文字の埋め込み
 
@@ -89,6 +103,9 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         self._embedding_initializer = embedding_initializer
         self._conv_kernel_initializer = conv_kernel_initializer
         self._conv_bias_initializer = conv_bias_initializer
+        self._dropout_rate = dropout_rate
+        self._is_training = is_training
+        self._kernel_regularizer = kernel_regularizer
         super(CharacterEmbedding, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -96,11 +113,13 @@ class CharacterEmbedding(tf.keras.layers.Layer):
             self._embedding = self.add_variable(
                 'embedding',
                 [self._vocab_size, self._emb_dim],
-                initializer=self._embedding_initializer)
+                initializer=self._embedding_initializer,
+                regularizer=self._kernel_regularizer)
         self._kernel = self.add_variable(
             'kernel',
             [1, self._filter_size, self._emb_dim, self._out_dim],
-            initializer=self._conv_kernel_initializer)
+            initializer=self._conv_kernel_initializer,
+            regularizer=self._kernel_regularizer)
         self._bias = self.add_variable(
             'bias',
             [1, 1, 1, self._out_dim],
@@ -121,6 +140,8 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         # (batch_size, N, W, p2)
         with tf.device('/cpu:0'):
             x_ = tf.nn.embedding_lookup(self._embedding, x)
+        if self._is_training:
+            x_ = tf.nn.dropout(x_, 1. - self._dropout_rate)
         # (batch_size * N, W, p2)
         x_ = tf.reshape(x_, [-1, W, self._emb_dim])
         # (batch_size * N, 1, W, p2)
@@ -130,7 +151,9 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         # (batch_size, N, W - filter_size + 1, p2)
         x_ = tf.reshape(x_, [-1, N, W - self._filter_size + 1, self._out_dim])
         # (batch_size, N, p2)
-        return tf.reduce_max(tf.nn.relu(x_), 2)
+        output = tf.reduce_max(tf.nn.relu(x_), 2)
+        return (tf.nn.dropout(output, 1 - self._dropout_rate)
+                if self._is_training else output)
 
     def compute_output_shape(self, input_shape):
         return tf.TensorShape(

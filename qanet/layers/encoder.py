@@ -5,6 +5,8 @@ from .convolutional import MultipleSeparableConv1D
 from .core import PositionEncoding, ExpandDims, Squeeze
 from .wrappers import ResidualNormed
 
+# TODO layer dropou
+
 class Encoder(tf.keras.models.Model):
     """Encoder
 
@@ -26,6 +28,9 @@ class Encoder(tf.keras.models.Model):
                  filter_size,
                  num_conv_layers,
                  num_heads,
+                 dropout_rate=0.0,
+                 is_training=True,
+                 kernel_regularizer=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
 
@@ -38,7 +43,10 @@ class Encoder(tf.keras.models.Model):
                 filters=dim,
                 width=filter_size,
                 padding='same',
-                activation='relu'))
+                activation='relu',
+                kernel_regularizer=kernel_regularizer),
+            dropout_rate=dropout_rate,
+            is_training=is_training)
 
         # Self-attention-layer
         self.attention = ResidualNormed(
@@ -46,13 +54,19 @@ class Encoder(tf.keras.models.Model):
                 num_heads=num_heads,
                 input_dim=dim,
                 d_k=dim,
-                d_v=dim))
+                d_v=dim,
+                regularizer=kernel_regularizer),
+            dropout_rate=dropout_rate,
+            is_training=is_training)
 
         # Feed-forward-layer
         self.feed_forward = ResidualNormed(
             tf.keras.layers.Dense(
                 dim,
-                activation='relu'))
+                activation='relu',
+                kernel_regularizer=kernel_regularizer),
+            dropout_rate=dropout_rate,
+            is_training=is_training)
 
     def call(self, x):
         # (batch_size, N, input_dim)

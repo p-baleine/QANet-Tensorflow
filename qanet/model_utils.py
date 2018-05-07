@@ -10,11 +10,12 @@ from .preprocess import TransformedOutput
 
 logger = logging.getLogger(__name__)
 
-def create_or_load_model(hparams, embedding, save_dir, resume_from=None):
+def create_or_load_model(hparams, embedding, save_dir, resume_from=None,
+                         is_training=False):
     """modelを新たに作成する。resume_fromが指定されている場合は
     resume_fromのweightsでをロードしたモデルを返す
     """
-    model = create_model(embedding, hparams)
+    model = create_model(embedding, hparams, is_training=is_training)
 
     if resume_from is not None:
         logger.info('Load weights from {}.'.format(resume_from))

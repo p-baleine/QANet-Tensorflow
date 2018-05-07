@@ -19,5 +19,9 @@
   "model_encoder_num_conv_layers": 2,
   "model_encoder_num_blocks": 7,
   "model_encoder_num_heads": 1,
-  "num_gpus": 2
+  "num_gpus": 2,
+  "dropout_rate": 0.05,
+  "embedding_dropout_rate": 0.1,
+  "layer_dropout_rate": 0.1,
+  "l2_regularization_factor": 3e-7
 }

@@ -9,6 +9,7 @@ class MultipleSeparableConv1D(tf.keras.models.Model):
                  width,
                  padding,
                  activation,
+                 kernel_regularizer=None,
                  **kwargs):
         super(MultipleSeparableConv1D, self).__init__(**kwargs)
 
@@ -19,7 +20,9 @@ class MultipleSeparableConv1D(tf.keras.models.Model):
                 filters=filters,
                 kernel_size=(1, width),
                 padding=padding,
-                activation=activation)
+                activation=activation,
+                depthwise_regularizer=kernel_regularizer,
+                pointwise_regularizer=kernel_regularizer)
             setattr(self, 'conv_{}'.format(l), layer)
 
         self.output_reshape = Squeeze(1)

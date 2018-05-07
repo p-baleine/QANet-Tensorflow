@@ -52,7 +52,8 @@ def main(data, hparams, save_path):
 
     logger.info('Preparing model...')
 
-    model = create_or_load_model(hparams, embedding, save_path)
+    model = create_or_load_model(hparams, embedding, save_path,
+                                 is_training=True)
 
     model.summary()
 

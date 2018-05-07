@@ -1,8 +1,15 @@
 import tensorflow as tf
 
 class ResidualNormed(tf.keras.layers.Wrapper):
-    def __init__(self, layer, epsilon=1e-6, **kwargs):
+    def __init__(self,
+                 layer,
+                 epsilon=1e-6,
+                 dropout_rate=0.0,
+                 is_training=True,
+                 **kwargs):
         self._epsilon = epsilon
+        self._dropout_rate = dropout_rate
+        self._is_training = is_training
         super(ResidualNormed, self).__init__(layer, **kwargs)
 
     def build(self, input_shape):
@@ -31,7 +38,9 @@ class ResidualNormed(tf.keras.layers.Wrapper):
         mean = tf.reduce_mean(output, axis=[-1], keep_dims=True)
         variance = tf.reduce_mean(tf.square(output - mean), axis=[-1], keep_dims=True)
         norm_output = (output - mean) * tf.rsqrt(variance + self._epsilon)
-        return x + (norm_output * self._scale + self._bias)
+        residual_output = x + (norm_output * self._scale + self._bias)
+        return (tf.nn.dropout(residual_output, 1. - self._dropout_rate)
+                if self._is_training else residual_output)
 
     def compute_output_shape(self, input_shape):
         return input_shape
