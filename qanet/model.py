@@ -11,21 +11,9 @@ def create_model(embedding_matrix, hparams):
     """QANet
 
     引数:
-      embedding_matrix: 単語向け学習済embedding matrix(N, word_emb)
-      hparams:
-        char_vocab_size: 文字の語彙のサイズ
-        char_emb_dim: 文字のembeddingのサイズ
-        char_dim: 文字のベクトルの出力サイズ
-        char_conv_filter_size: 文字のベクトルを畳込みで計算する時のfilterサイズ
-        highway_num_layers: 文字ベクトルに適用するHighway Networkの
-            layerの数
-        dim: encoderの次元
-        embedding_encoder_num_blocks: Embedding encoderのブロック数
-        embedding_encoder_filter_size: Embedding encoderの
-            畳み込み層のフィルターサイズ
-        embedding_encoder_conv_num_layers: Embedding encoderの
-            畳込み層の層数
-        num_heads: Multihead-attentionのheadの数
+      hparams/default.jsonを参照
+
+      TODO 詳細を記述する
 
     Input:
       context: (batch_size, N)
@@ -110,11 +98,13 @@ def create_model(embedding_matrix, hparams):
         num_conv_layers=hparams.embedding_encoder_num_conv_layers,
         num_heads=hparams.embedding_encoder_num_heads)
 
-    for _ in range(hparams.embedding_encoder_num_blocks):
-        # (batch_size, N, out_dim)
-        context = embedding_encoder(context)
-        # (batch_size, M, out_dim)
-        question = embedding_encoder(question)
+    # 今は(paperに従い)embedding_encoderは1ブロックのみ対応
+    assert hparams.embedding_encoder_num_blocks == 1
+
+    # (batch_size, N, out_dim)
+    context = embedding_encoder(context)
+    # (batch_size, M, out_dim)
+    question = embedding_encoder(question)
 
     # Context-Query Attention Layer.
 
@@ -133,11 +123,17 @@ def create_model(embedding_matrix, hparams):
 
     # We share weights between each of the 3 repetitions
     # of the model encoder.
-    model_encoder = Encoder(
-        dim=hparams.dim * 4,
-        filter_size=hparams.model_encoder_filter_size,
-        num_conv_layers=hparams.model_encoder_num_conv_layers,
-        num_heads=hparams.model_encoder_num_heads)
+    num_blocks = hparams.model_encoder_num_blocks
+    num_gpus = hparams.num_gpus
+
+    model_encoders = []
+
+    for b in range(num_blocks):
+        model_encoders.append(Encoder(
+            dim=hparams.dim * 4,
+            filter_size=hparams.model_encoder_filter_size,
+            num_conv_layers=hparams.model_encoder_num_conv_layers,
+            num_heads=hparams.model_encoder_num_heads))
 
     x = tf.keras.layers.Concatenate(axis=2)([
         context,
@@ -145,9 +141,9 @@ def create_model(embedding_matrix, hparams):
         tf.keras.layers.Multiply()([context, A]),
         tf.keras.layers.Multiply()([context, B])])
 
-    M_0 = encoder_block(model_encoder, x, hparams.model_encoder_num_blocks)
-    M_1 = encoder_block(model_encoder, M_0, hparams.model_encoder_num_blocks)
-    M_2 = encoder_block(model_encoder, M_1, hparams.model_encoder_num_blocks)
+    M_0 = multiple_encoder_block(model_encoders, x, num_gpus)
+    M_1 = multiple_encoder_block(model_encoders, M_0, num_gpus)
+    M_2 = multiple_encoder_block(model_encoders, M_1, num_gpus)
 
     # Output layer.
 
@@ -167,7 +163,8 @@ def create_model(embedding_matrix, hparams):
         ],
         outputs=[p_1, p_2])
 
-def encoder_block(encoder, x, num_blocks):
-    for _ in range(num_blocks):
-        x = encoder(x)
+def multiple_encoder_block(encoders, x, num_gpus=1):
+    for idx, encoder in enumerate(encoders):
+        with tf.device('/gpu:{}'.format(idx % num_gpus)):
+            x = encoder(x)
     return x

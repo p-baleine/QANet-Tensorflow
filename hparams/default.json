@@ -5,7 +5,7 @@
   "max_context_length": 400,
   "max_question_length": 30,
   "max_word_length": 16,
-  "char_vocab_size": 24117,
+  "char_vocab_size": 83890,
   "char_emb_dim": 8,
   "char_dim": 200,
   "char_conv_filter_size": 5,
@@ -17,6 +17,7 @@
   "embedding_encoder_num_heads": 1,
   "model_encoder_filter_size": 5,
   "model_encoder_num_conv_layers": 2,
-  "model_encoder_num_blocks": 2,
-  "model_encoder_num_heads": 1
+  "model_encoder_num_blocks": 8,
+  "model_encoder_num_heads": 1,
+  "num_gpus": 2
 }
