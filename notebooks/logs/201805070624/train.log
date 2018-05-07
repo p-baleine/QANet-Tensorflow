@@ -1,0 +1,625 @@
+2018-05-07 06:24:05,748 - __main__ - INFO - Hyper parameters:
+2018-05-07 06:24:05,748 - __main__ - INFO - {
+  "highway_num_layers": 2,
+  "char_emb_dim": 8,
+  "learning_rate": 0.001,
+  "epochs": 100,
+  "max_word_length": 16,
+  "model_encoder_num_heads": 1,
+  "max_context_length": 400,
+  "model_encoder_num_conv_layers": 2,
+  "embedding_encoder_filter_size": 7,
+  "max_question_length": 30,
+  "model_encoder_num_blocks": 7,
+  "model_encoder_filter_size": 5,
+  "embedding_encoder_num_heads": 1,
+  "dim": 128,
+  "char_conv_filter_size": 5,
+  "char_vocab_size": 1178,
+  "embedding_encoder_num_conv_layers": 4,
+  "num_gpus": 2,
+  "batch_size": 32,
+  "char_dim": 200,
+  "embedding_encoder_num_blocks": 1
+}
+2018-05-07 06:24:05,748 - __main__ - INFO - Loading data...
+2018-05-07 06:24:24,334 - qanet.data_utils - INFO - Preprocessing data...
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56be95823aeaaa14008c910c
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56be95823aeaaa14008c910d
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56be95823aeaaa14008c910e
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56be95823aeaaa14008c910f
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56be95823aeaaa14008c9110
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bf97aba10cfb140055119e
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bf97aba10cfb140055119f
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bf97aba10cfb14005511a0
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bf97aba10cfb14005511a1
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4bf242ccc5a1400d831be
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4bf242ccc5a1400d831bf
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4bf242ccc5a1400d831c0
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4bf242ccc5a1400d831c1
+2018-05-07 06:24:24,335 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4bf242ccc5a1400d831c2
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56beb4023aeaaa14008c9252
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56beb4023aeaaa14008c9253
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56beb4023aeaaa14008c9254
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56beb4023aeaaa14008c9255
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bfb502a10cfb140055125b
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bfb502a10cfb140055125c
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bfb502a10cfb140055125d
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bfb502a10cfb140055125e
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56bfb502a10cfb140055125f
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4d8702ccc5a1400d83294
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4d8702ccc5a1400d83296
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4d8702ccc5a1400d83297
+2018-05-07 06:24:24,336 - qanet.data_utils - WARNING - Take away datum due to too long context, Beyoncé, 56d4d8702ccc5a1400d83298
+2018-05-07 06:24:24,337 - qanet.data_utils - WARNING - Take away datum due to too long question, Frédéric_Chopin, 56d3a51459d6e41400146877
+2018-05-07 06:24:24,337 - qanet.data_utils - WARNING - Take away datum due to too long context, Sino-Tibetan_relations_during_the_Ming_dynasty, 56ce4a58aab44d1400b88668
+2018-05-07 06:24:24,337 - qanet.data_utils - WARNING - Take away datum due to too long context, Sino-Tibetan_relations_during_the_Ming_dynasty, 56ce4a58aab44d1400b88669
+2018-05-07 06:24:24,337 - qanet.data_utils - WARNING - Take away datum due to too long context, Sino-Tibetan_relations_during_the_Ming_dynasty, 56ce4a58aab44d1400b8866a
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Sino-Tibetan_relations_during_the_Ming_dynasty, 56ce4a58aab44d1400b8866b
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Sino-Tibetan_relations_during_the_Ming_dynasty, 56ce4a58aab44d1400b8866c
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Spectre_(2015_film), 56cef51daab44d1400b88d11
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Spectre_(2015_film), 56cef51daab44d1400b88d12
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Spectre_(2015_film), 56cef51daab44d1400b88d13
+2018-05-07 06:24:24,338 - qanet.data_utils - WARNING - Take away datum due to too long context, Spectre_(2015_film), 56cef51daab44d1400b88d14
+2018-05-07 06:24:24,339 - qanet.data_utils - WARNING - Take away datum due to too long context, New_York_City, 56cf3629aab44d1400b88e64
+2018-05-07 06:24:24,339 - qanet.data_utils - WARNING - Take away datum due to too long context, New_York_City, 56cf3629aab44d1400b88e65
+2018-05-07 06:24:24,339 - qanet.data_utils - WARNING - Take away datum due to too long context, New_York_City, 56cf3629aab44d1400b88e66
+2018-05-07 06:24:24,339 - qanet.data_utils - WARNING - Take away datum due to too long context, New_York_City, 56cf3629aab44d1400b88e67
+2018-05-07 06:24:24,339 - qanet.data_utils - WARNING - Take away datum due to too long context, New_York_City, 56cf3629aab44d1400b88e68
+2018-05-07 06:24:24,342 - qanet.data_utils - WARNING - Take away datum due to too long question, Financial_crisis_of_2007%E2%80%9308, 57334d024776f41900660818
+2018-05-07 06:24:24,342 - qanet.data_utils - WARNING - Take away datum due to too long context, Institute_of_technology, 56ddaea49a695914005b958a
+2018-05-07 06:24:24,342 - qanet.data_utils - WARNING - Take away datum due to too long question, Wayback_Machine, 56ddca9d9a695914005b95d8
+2018-05-07 06:24:24,342 - qanet.data_utils - WARNING - Take away datum due to too long question, Dutch_Republic, 56ddecfe66d3e219004dae18
+2018-05-07 06:24:24,343 - qanet.data_utils - WARNING - Take away datum due to too long context, Arnold_Schwarzenegger, 56de6f77cffd8e1900b4b8ba
+2018-05-07 06:24:24,343 - qanet.data_utils - WARNING - Take away datum due to too long context, Arnold_Schwarzenegger, 56de6f77cffd8e1900b4b8bb
+2018-05-07 06:24:24,343 - qanet.data_utils - WARNING - Take away datum due to too long context, Arnold_Schwarzenegger, 56de6f77cffd8e1900b4b8bc
+2018-05-07 06:24:24,343 - qanet.data_utils - WARNING - Take away datum due to too long context, Arnold_Schwarzenegger, 56de6f77cffd8e1900b4b8bd
+2018-05-07 06:24:24,345 - qanet.data_utils - WARNING - Take away datum due to too long context, Boston, 56e13873cd28a01900c676c6
+2018-05-07 06:24:24,345 - qanet.data_utils - WARNING - Take away datum due to too long context, Boston, 56e13873cd28a01900c676c7
+2018-05-07 06:24:24,345 - qanet.data_utils - WARNING - Take away datum due to too long context, Boston, 56e13873cd28a01900c676c8
+2018-05-07 06:24:24,345 - qanet.data_utils - WARNING - Take away datum due to too long context, Boston, 56e13873cd28a01900c676c9
+2018-05-07 06:24:24,346 - qanet.data_utils - WARNING - Take away datum due to too long question, Estonian_language, 56e429db8c00841900fbaf13
+2018-05-07 06:24:24,346 - qanet.data_utils - WARNING - Take away datum due to too long question, Estonian_language, 56e431558c00841900fbaf2f
+2018-05-07 06:24:24,346 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6cac0de9d37140006804c
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6cd4bde9d371400068063
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6d7086fe0821900b8ebbe
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6dd64de9d3714000680a6
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6f3236fe0821900b8ec4d
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Adult_contemporary_music, 56e6f78d6fe0821900b8ec7a
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Daylight_saving_time, 56e75e3b37bdd419002c3f03
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Daylight_saving_time, 56e77c7137bdd419002c4027
+2018-05-07 06:24:24,347 - qanet.data_utils - WARNING - Take away datum due to too long question, Daylight_saving_time, 56e787fb37bdd419002c40bf
+2018-05-07 06:24:24,348 - qanet.data_utils - WARNING - Take away datum due to too long question, Dialect, 56e822d000c9c71400d775cc
+2018-05-07 06:24:24,348 - qanet.data_utils - WARNING - Take away datum due to too long question, Slavs, 56f71f1c3d8e2e1400e3736e
+2018-05-07 06:24:24,348 - qanet.data_utils - WARNING - Take away datum due to too long question, Slavs, 56f71f1c3d8e2e1400e3736f
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f731ca711bf01900a44a53
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f731ca711bf01900a44a54
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f733273d8e2e1400e3744e
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f734e03d8e2e1400e3746c
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f734e03d8e2e1400e3746e
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f7477aa6d7ea1400e1714c
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f75adda6d7ea1400e171fc
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f75cbfaef2371900625b55
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f75cbfaef2371900625b57
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f75cbfaef2371900625b58
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f7eb38a6d7ea1400e172c4
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f7eb38a6d7ea1400e172c6
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f7eb38a6d7ea1400e172c7
+2018-05-07 06:24:24,349 - qanet.data_utils - WARNING - Take away datum due to too long question, Treaty, 56f7f0b9aef2371900625c8b
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f894a19b226e1400dd0c40
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f894a19b226e1400dd0c41
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f894a19b226e1400dd0c42
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f894a19b226e1400dd0c43
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f894a19b226e1400dd0c44
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f89eb29e9bad19000a01e5
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f89eb29e9bad19000a01e6
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f89eb29e9bad19000a01e7
+2018-05-07 06:24:24,350 - qanet.data_utils - WARNING - Take away datum due to too long context, Virgil, 56f89eb29e9bad19000a01e8
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long question, Near_East, 56f8d86f9b226e1400dd10d4
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long question, Near_East, 56f8e0bc9b226e1400dd116c
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long question, Near_East, 56f8ec5d9e9bad19000a0704
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long context, Zhejiang, 56f97b2e9b226e1400dd148e
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long context, Zhejiang, 56f97b2e9b226e1400dd148f
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long context, Zhejiang, 56f97b2e9b226e1400dd1490
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long context, Zhejiang, 56f97b2e9b226e1400dd1491
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long context, Zhejiang, 56f97b2e9b226e1400dd1492
+2018-05-07 06:24:24,351 - qanet.data_utils - WARNING - Take away datum due to too long question, High-definition_television, 56faae57f34c681400b0c113
+2018-05-07 06:24:24,352 - qanet.data_utils - WARNING - Take away datum due to too long question, The_Times, 5705f88475f01819005e77f3
+2018-05-07 06:24:24,352 - qanet.data_utils - WARNING - Take away datum due to too long question, The_Times, 5706088275f01819005e78c2
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long question, Atlantic_City,_New_Jersey, 5706268775f01819005e7a04
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long context, Chihuahua_(state), 570717a99e06ca38007e9405
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long context, Chihuahua_(state), 570717a99e06ca38007e9406
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long context, Chihuahua_(state), 570717a99e06ca38007e9407
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long context, Chihuahua_(state), 570717a99e06ca38007e9408
+2018-05-07 06:24:24,353 - qanet.data_utils - WARNING - Take away datum due to too long context, Chihuahua_(state), 570717a99e06ca38007e9409
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709a923ed30961900e843d0
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709a923ed30961900e843d1
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709a923ed30961900e843d2
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709a923ed30961900e843d3
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709a923ed30961900e843d4
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709c0e6ed30961900e84462
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709c0e6ed30961900e84463
+2018-05-07 06:24:24,354 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709c0e6ed30961900e84464
+2018-05-07 06:24:24,355 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709c0e6ed30961900e84465
+2018-05-07 06:24:24,355 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_dollar, 5709c0e6ed30961900e84466
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b6da3ec8fbc190045ba14
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b6da3ec8fbc190045ba15
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b6da3ec8fbc190045ba16
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b6da3ec8fbc190045ba17
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b6da3ec8fbc190045ba18
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b735dec8fbc190045ba32
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b735dec8fbc190045ba33
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b735dec8fbc190045ba34
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b735dec8fbc190045ba35
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b735dec8fbc190045ba36
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b745a6b8089140040f974
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b745a6b8089140040f975
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b745a6b8089140040f976
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b745a6b8089140040f977
+2018-05-07 06:24:24,356 - qanet.data_utils - WARNING - Take away datum due to too long context, Hard_rock, 570b745a6b8089140040f978
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long context, Adolescence, 570da8e2df2f5219002ed0ce
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long context, Adolescence, 570da8e2df2f5219002ed0cf
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long context, Adolescence, 570da8e2df2f5219002ed0d0
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long context, Adolescence, 570da8e2df2f5219002ed0d1
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long context, Adolescence, 570da8e2df2f5219002ed0d2
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long question, Adolescence, 570dec870b85d914000d7be8
+2018-05-07 06:24:24,357 - qanet.data_utils - WARNING - Take away datum due to too long question, Melbourne, 570e74830b85d914000d7f23
+2018-05-07 06:24:24,358 - qanet.data_utils - WARNING - Take away datum due to too long question, General_Electric, 570d3cf6fed7b91900d45d6f
+2018-05-07 06:24:24,359 - qanet.data_utils - WARNING - Take away datum due to too long question, Age_of_Enlightenment, 571097dca58dae1900cd6aa5
+2018-05-07 06:24:24,359 - qanet.data_utils - WARNING - Take away datum due to too long question, Age_of_Enlightenment, 5710dcb5b654c5140001fa10
+2018-05-07 06:24:24,359 - qanet.data_utils - WARNING - Take away datum due to too long question, Ashkenazi_Jews, 571a72404faf5e1900b8a9ad
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long question, Ashkenazi_Jews, 571a76a610f8ca1400305058
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long question, Ashkenazi_Jews, 571a76a610f8ca140030505a
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long question, Ashkenazi_Jews, 571a898c4faf5e1900b8aa3c
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long question, Ashkenazi_Jews, 571a898c4faf5e1900b8aa3d
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long context, Athanasius_of_Alexandria, 571aa5df10f8ca1400305259
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long context, Athanasius_of_Alexandria, 571aa5df10f8ca140030525d
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long context, Athanasius_of_Alexandria, 571aa5df10f8ca140030525a
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long context, Athanasius_of_Alexandria, 571aa5df10f8ca140030525b
+2018-05-07 06:24:24,360 - qanet.data_utils - WARNING - Take away datum due to too long context, Athanasius_of_Alexandria, 571aa5df10f8ca140030525c
+2018-05-07 06:24:24,361 - qanet.data_utils - WARNING - Take away datum due to too long context, Hellenistic_period, 5725d86eec44d21400f3d691
+2018-05-07 06:24:24,361 - qanet.data_utils - WARNING - Take away datum due to too long context, Hellenistic_period, 5725d86eec44d21400f3d692
+2018-05-07 06:24:24,361 - qanet.data_utils - WARNING - Take away datum due to too long context, Hellenistic_period, 5725d86eec44d21400f3d693
+2018-05-07 06:24:24,362 - qanet.data_utils - WARNING - Take away datum due to too long context, Hellenistic_period, 5725d86eec44d21400f3d694
+2018-05-07 06:24:24,362 - qanet.data_utils - WARNING - Take away datum due to too long context, Hellenistic_period, 5725d86eec44d21400f3d695
+2018-05-07 06:24:24,362 - qanet.data_utils - WARNING - Take away datum due to too long question, Napoleon, 5726d752dd62a815002e9211
+2018-05-07 06:24:24,362 - qanet.data_utils - WARNING - Take away datum due to too long question, Northwestern_University, 5727dfba2ca10214002d9881
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long question, Dutch_language, 572693fddd62a815002e8a18
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long question, Incandescent_light_bulb, 57261e1d89a1e219009ac297
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 572665a8708984140094c4b3
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 572665a8708984140094c4b4
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 572665a8708984140094c4b5
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 572665a8708984140094c4b6
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 5726704cf1498d1400e8dfae
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 5726704cf1498d1400e8dfaf
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long context, Chicago_Cubs, 5726704cf1498d1400e8dfb0
+2018-05-07 06:24:24,363 - qanet.data_utils - WARNING - Take away datum due to too long question, States_of_Germany, 5729281f6aef051400154ae6
+2018-05-07 06:24:24,364 - qanet.data_utils - WARNING - Take away datum due to too long context, Mammal, 572643c7994a9e14006f0189
+2018-05-07 06:24:24,364 - qanet.data_utils - WARNING - Take away datum due to too long context, Mammal, 572643c7994a9e14006f018a
+2018-05-07 06:24:24,364 - qanet.data_utils - WARNING - Take away datum due to too long context, Mammal, 572643c7994a9e14006f018b
+2018-05-07 06:24:24,364 - qanet.data_utils - WARNING - Take away datum due to too long context, Mammal, 572643c7994a9e14006f018c
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 572760715951b619008f88f5
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 572760715951b619008f88f6
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 572760715951b619008f88f7
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 572767f2dd62a815002e9c51
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 57278c0ddd62a815002e9ffd
+2018-05-07 06:24:24,365 - qanet.data_utils - WARNING - Take away datum due to too long question, New_Haven,_Connecticut, 5727a1232ca10214002d925c
+2018-05-07 06:24:24,366 - qanet.data_utils - WARNING - Take away datum due to too long context, Queen_(band), 572685c3f1498d1400e8e294
+2018-05-07 06:24:24,366 - qanet.data_utils - WARNING - Take away datum due to too long context, Queen_(band), 572685c3f1498d1400e8e295
+2018-05-07 06:24:24,366 - qanet.data_utils - WARNING - Take away datum due to too long context, Queen_(band), 572685c3f1498d1400e8e296
+2018-05-07 06:24:24,366 - qanet.data_utils - WARNING - Take away datum due to too long context, Queen_(band), 572685c3f1498d1400e8e297
+2018-05-07 06:24:24,366 - qanet.data_utils - WARNING - Take away datum due to too long context, Queen_(band), 572685c3f1498d1400e8e298
+2018-05-07 06:24:24,367 - qanet.data_utils - WARNING - Take away datum due to too long question, Law_of_the_United_States, 572cbceadfb02c14005c6c17
+2018-05-07 06:24:24,367 - qanet.data_utils - WARNING - Take away datum due to too long question, Jews, 5726723b708984140094c65d
+2018-05-07 06:24:24,367 - qanet.data_utils - WARNING - Take away datum due to too long context, Carnival, 57276669f1498d1400e8f76e
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Carnival, 57276669f1498d1400e8f76f
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Carnival, 57276669f1498d1400e8f770
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Carnival, 57276669f1498d1400e8f771
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Carnival, 57276669f1498d1400e8f772
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f249708984140094d6b3
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f249708984140094d6b4
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f249708984140094d6b5
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f249708984140094d6b6
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f249708984140094d6b7
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f7dbf1498d1400e8f148
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f7dbf1498d1400e8f149
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f7dbf1498d1400e8f14a
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f7dbf1498d1400e8f14b
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long context, Yale_University, 5726f7dbf1498d1400e8f14c
+2018-05-07 06:24:24,368 - qanet.data_utils - WARNING - Take away datum due to too long question, Gothic_architecture, 57268fad5951b619008f769f
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long question, Gothic_architecture, 5726980cf1498d1400e8e497
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Cubism, 5727bba52ca10214002d9508
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Cubism, 5727bba52ca10214002d9507
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Cubism, 5727bba52ca10214002d9506
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Edmund_Burke, 5726b6f4dd62a815002e8db4
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Edmund_Burke, 5726b6f4dd62a815002e8db5
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Edmund_Burke, 5726b6f4dd62a815002e8db6
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Edmund_Burke, 5726b6f4dd62a815002e8db7
+2018-05-07 06:24:24,369 - qanet.data_utils - WARNING - Take away datum due to too long context, Edmund_Burke, 5726b6f4dd62a815002e8db8
+2018-05-07 06:24:24,370 - qanet.data_utils - WARNING - Take away datum due to too long context, Electric_motor, 5726a9a8f1498d1400e8e672
+2018-05-07 06:24:24,370 - qanet.data_utils - WARNING - Take away datum due to too long context, Electric_motor, 5726a9a8f1498d1400e8e673
+2018-05-07 06:24:24,370 - qanet.data_utils - WARNING - Take away datum due to too long context, Electric_motor, 5726a9a8f1498d1400e8e674
+2018-05-07 06:24:24,370 - qanet.data_utils - WARNING - Take away datum due to too long context, Electric_motor, 5726a9a8f1498d1400e8e675
+2018-05-07 06:24:24,370 - qanet.data_utils - WARNING - Take away datum due to too long context, Electric_motor, 5726a9a8f1498d1400e8e676
+2018-05-07 06:24:24,371 - qanet.data_utils - WARNING - Take away datum due to too long question, Molotov%E2%80%93Ribbentrop_Pact, 5726d90bf1498d1400e8ed08
+2018-05-07 06:24:24,371 - qanet.data_utils - WARNING - Take away datum due to too long question, Capacitor, 572700fe708984140094d83c
+2018-05-07 06:24:24,371 - qanet.data_utils - WARNING - Take away datum due to too long question, Capacitor, 57270731dd62a815002e97fd
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2c616aef051400155338
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2c616aef051400155339
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2c616aef05140015533a
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2c616aef05140015533b
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2c616aef05140015533c
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2d423f37b31900478773
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2d423f37b31900478774
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2d423f37b31900478775
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2d423f37b31900478776
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long context, Digimon, 572a2d423f37b31900478777
+2018-05-07 06:24:24,372 - qanet.data_utils - WARNING - Take away datum due to too long question, Baptists, 572759d8f1498d1400e8f6d3
+2018-05-07 06:24:24,373 - qanet.data_utils - WARNING - Take away datum due to too long context, Supreme_court, 5727846af1498d1400e8fa6a
+2018-05-07 06:24:24,373 - qanet.data_utils - WARNING - Take away datum due to too long context, Supreme_court, 5727846af1498d1400e8fa6b
+2018-05-07 06:24:24,373 - qanet.data_utils - WARNING - Take away datum due to too long context, Supreme_court, 5727846af1498d1400e8fa6c
+2018-05-07 06:24:24,373 - qanet.data_utils - WARNING - Take away datum due to too long context, Supreme_court, 5727846af1498d1400e8fa6d
+2018-05-07 06:24:24,373 - qanet.data_utils - WARNING - Take away datum due to too long context, Supreme_court, 5727846af1498d1400e8fa6e
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 57279b65ff5b5019007d90da
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 57279b65ff5b5019007d90db
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 57279b65ff5b5019007d90dc
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 57279b65ff5b5019007d90dd
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 5727e311ff5b5019007d9798
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 5727e311ff5b5019007d9799
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 5727e311ff5b5019007d979a
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 5727e311ff5b5019007d979b
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, Gramophone_record, 5727e311ff5b5019007d979c
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, A_cappella, 5727bd833acd2414000deb1d
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, A_cappella, 5727bd833acd2414000deb1e
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, A_cappella, 5727bd833acd2414000deb1f
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, A_cappella, 5727bd833acd2414000deb20
+2018-05-07 06:24:24,374 - qanet.data_utils - WARNING - Take away datum due to too long context, A_cappella, 5727bd833acd2414000deb21
+2018-05-07 06:24:24,375 - qanet.data_utils - WARNING - Take away datum due to too long question, Green, 57296ac9af94a219006aa3d5
+2018-05-07 06:24:24,375 - qanet.data_utils - WARNING - Take away datum due to too long question, USB, 572805c04b864d1900164258
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4163acd2414000dfddf
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4163acd2414000dfde0
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4163acd2414000dfde1
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4163acd2414000dfde2
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4163acd2414000dfde3
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4ee3acd2414000dfdfb
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4ee3acd2414000dfdfc
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4ee3acd2414000dfdfd
+2018-05-07 06:24:24,376 - qanet.data_utils - WARNING - Take away datum due to too long context, Sahara, 5728c4ee3acd2414000dfdfe
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long question, Serbo-Croatian, 572999813f37b319004784e8
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long context, Mandolin, 5728b30aff5b5019007da4ca
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long context, Mandolin, 5728b30aff5b5019007da4cb
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long context, Mandolin, 5728b30aff5b5019007da4cc
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long context, Mandolin, 5728b30aff5b5019007da4cd
+2018-05-07 06:24:24,378 - qanet.data_utils - WARNING - Take away datum due to too long context, Mandolin, 5728b30aff5b5019007da4ce
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_presidential_election,_2004, 5728d6633acd2414000dffdf
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_presidential_election,_2004, 5728d6633acd2414000dffe0
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_presidential_election,_2004, 5728d6633acd2414000dffe1
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_presidential_election,_2004, 5728d6633acd2414000dffe2
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, United_States_presidential_election,_2004, 5728d6633acd2414000dffe3
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, Liberal_Party_of_Australia, 5728eb37ff5b5019007da944
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, Liberal_Party_of_Australia, 5728eb37ff5b5019007da945
+2018-05-07 06:24:24,379 - qanet.data_utils - WARNING - Take away datum due to too long context, Liberal_Party_of_Australia, 5728eb37ff5b5019007da946
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long context, Samurai, 5728ef234b864d19001650c8
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long context, Samurai, 5728ef234b864d19001650c9
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long context, Samurai, 5728ef234b864d19001650ca
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long context, Samurai, 5728ef234b864d19001650cb
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long context, Samurai, 5728ef234b864d19001650cc
+2018-05-07 06:24:24,380 - qanet.data_utils - WARNING - Take away datum due to too long question, Energy, 5729f6063f37b31900478612
+2018-05-07 06:24:24,381 - qanet.data_utils - WARNING - Take away datum due to too long context, Madrasa, 572a84d3f75d5e190021fb38
+2018-05-07 06:24:24,381 - qanet.data_utils - WARNING - Take away datum due to too long context, Madrasa, 572a84d3f75d5e190021fb39
+2018-05-07 06:24:24,381 - qanet.data_utils - WARNING - Take away datum due to too long context, Madrasa, 572a84d3f75d5e190021fb3a
+2018-05-07 06:24:24,381 - qanet.data_utils - WARNING - Take away datum due to too long context, Madrasa, 572a84d3f75d5e190021fb3b
+2018-05-07 06:24:24,381 - qanet.data_utils - WARNING - Take away datum due to too long context, Madrasa, 572a84d3f75d5e190021fb3c
+2018-05-07 06:24:24,382 - qanet.data_utils - WARNING - Take away datum due to too long context, Canadian_football, 572e844703f989190075670b
+2018-05-07 06:24:24,382 - qanet.data_utils - WARNING - Take away datum due to too long context, Canadian_football, 572e844703f989190075670c
+2018-05-07 06:24:24,382 - qanet.data_utils - WARNING - Take away datum due to too long context, Canadian_football, 572e844703f989190075670d
+2018-05-07 06:24:24,382 - qanet.data_utils - WARNING - Take away datum due to too long context, Canadian_football, 572e844703f989190075670e
+2018-05-07 06:24:24,382 - qanet.data_utils - WARNING - Take away datum due to too long question, Canadian_football, 572e8e2703f9891900756780
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Steven_Spielberg, 5731cbbce99e3014001e6296
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Steven_Spielberg, 5731cbbce99e3014001e6297
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Steven_Spielberg, 5731cbbce99e3014001e6298
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Steven_Spielberg, 5731cbbce99e3014001e6299
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Steven_Spielberg, 5731cbbce99e3014001e629a
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Elevator, 572ed638dfa6aa1500f8d42f
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Elevator, 572ed638dfa6aa1500f8d430
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Elevator, 572ed638dfa6aa1500f8d431
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Elevator, 572ed638dfa6aa1500f8d432
+2018-05-07 06:24:24,383 - qanet.data_utils - WARNING - Take away datum due to too long context, Elevator, 572ed638dfa6aa1500f8d433
+2018-05-07 06:24:24,384 - qanet.data_utils - WARNING - Take away datum due to too long question, Great_power, 5730e8d2aca1c71400fe5b50
+2018-05-07 06:24:24,384 - qanet.data_utils - WARNING - Take away datum due to too long question, Great_power, 573106b7497a881900248b0b
+2018-05-07 06:24:24,386 - qanet.data_utils - WARNING - Take away datum due to too long question, Printed_circuit_board, 572fa22c04bcaa1900d76b1d
+2018-05-07 06:24:24,386 - qanet.data_utils - WARNING - Take away datum due to too long question, Premier_League, 572fc1dd947a6a140053cc5f
+2018-05-07 06:24:24,386 - qanet.data_utils - WARNING - Take away datum due to too long question, Premier_League, 5733f914d058e614000b66da
+2018-05-07 06:24:24,386 - qanet.data_utils - WARNING - Take away datum due to too long question, Premier_League, 5733f914d058e614000b66db
+2018-05-07 06:24:24,387 - qanet.data_utils - WARNING - Take away datum due to too long context, Pacific_War, 57321329e17f3d1400422669
+2018-05-07 06:24:24,387 - qanet.data_utils - WARNING - Take away datum due to too long context, Pacific_War, 57321329e17f3d140042266a
+2018-05-07 06:24:24,387 - qanet.data_utils - WARNING - Take away datum due to too long context, Pacific_War, 57321329e17f3d140042266c
+2018-05-07 06:24:24,387 - qanet.data_utils - WARNING - Take away datum due to too long context, Pacific_War, 57321329e17f3d140042266b
+2018-05-07 06:24:24,387 - qanet.data_utils - WARNING - Take away datum due to too long context, Pacific_War, 57321329e17f3d140042266d
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 573132e2a5e9cc1400cdbcd3
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 573132e2a5e9cc1400cdbcd4
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 573132e2a5e9cc1400cdbcd5
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 573132e2a5e9cc1400cdbcd6
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 5731388f497a881900248c7b
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 5731388f497a881900248c7c
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 5731388f497a881900248c7d
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 5731388f497a881900248c7e
+2018-05-07 06:24:24,389 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 5731388f497a881900248c7f
+2018-05-07 06:24:24,390 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 57315c28497a881900248e75
+2018-05-07 06:24:24,390 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 57315c28497a881900248e76
+2018-05-07 06:24:24,390 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 57315c28497a881900248e77
+2018-05-07 06:24:24,390 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 57315c28497a881900248e79
+2018-05-07 06:24:24,390 - qanet.data_utils - WARNING - Take away datum due to too long context, Qing_dynasty, 57315c28497a881900248e78
+2018-05-07 06:24:24,391 - qanet.data_utils - WARNING - Take away datum due to too long context, Humanism, 57327a00e17f3d140042299d
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Humanism, 57327a00e17f3d140042299e
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Humanism, 57327a00e17f3d140042299f
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Humanism, 57327a00e17f3d14004229a0
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57345f9c879d6814001ca57c
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57345f9c879d6814001ca57b
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57345f9c879d6814001ca57d
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57345f9c879d6814001ca57e
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57363183012e2f140011a1fb
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57363183012e2f140011a1fc
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57363183012e2f140011a1fd
+2018-05-07 06:24:24,392 - qanet.data_utils - WARNING - Take away datum due to too long context, Hunting, 57363183012e2f140011a1fe
+2018-05-07 06:24:24,393 - qanet.data_utils - INFO - 338 data filtered, total data size: 87115
+2018-05-07 06:25:19,088 - qanet.data_utils - INFO - Preprocessing data...
+2018-05-07 06:25:19,089 - qanet.data_utils - WARNING - Take away datum due to too long question, Super_Bowl_50, 56bf53e73aeaaa14008c95ce
+2018-05-07 06:25:19,089 - qanet.data_utils - WARNING - Take away datum due to too long question, Computational_complexity_theory, 56e1d9fee3433e14004231cd
+2018-05-07 06:25:19,090 - qanet.data_utils - WARNING - Take away datum due to too long context, Teacher, 56e77a8700c9c71400d7718a
+2018-05-07 06:25:19,090 - qanet.data_utils - WARNING - Take away datum due to too long context, Teacher, 56e77a8700c9c71400d7718b
+2018-05-07 06:25:19,090 - qanet.data_utils - WARNING - Take away datum due to too long context, Teacher, 56e77a8700c9c71400d7718c
+2018-05-07 06:25:19,090 - qanet.data_utils - WARNING - Take away datum due to too long context, Teacher, 56e77a8700c9c71400d7718d
+2018-05-07 06:25:19,090 - qanet.data_utils - WARNING - Take away datum due to too long context, Teacher, 56e77a8700c9c71400d7718e
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 572651f9f1498d1400e8dbee
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 572651f9f1498d1400e8dbef
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 572651f9f1498d1400e8dbf0
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 572651f9f1498d1400e8dbf1
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 572651f9f1498d1400e8dbf2
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726938af1498d1400e8e446
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726938af1498d1400e8e447
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726938af1498d1400e8e448
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726938af1498d1400e8e449
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726938af1498d1400e8e44a
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57265e455951b619008f70bb
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57265e455951b619008f70bc
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57265e455951b619008f70bd
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726975c708984140094cb1f
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726975c708984140094cb20
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726975c708984140094cb21
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269bb8708984140094cb95
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269bb8708984140094cb96
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269bb8708984140094cb97
+2018-05-07 06:25:19,091 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269bb8708984140094cb98
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269e3bf1498d1400e8e516
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269e3bf1498d1400e8e517
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269e3bf1498d1400e8e518
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269e3bf1498d1400e8e519
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 57269e3bf1498d1400e8e51a
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b58f5951b619008f7b55
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b58f5951b619008f7b56
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b58f5951b619008f7b57
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b58f5951b619008f7b58
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b58f5951b619008f7b59
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b718dd62a815002e8dbe
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b718dd62a815002e8dbf
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b718dd62a815002e8dc0
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b718dd62a815002e8dc1
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b718dd62a815002e8dc2
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b929f1498d1400e8e8e8
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b929f1498d1400e8e8e9
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b929f1498d1400e8e8ea
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b929f1498d1400e8e8eb
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726b929f1498d1400e8e8ec
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726ba2c708984140094cf59
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726ba2c708984140094cf5a
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726ba2c708984140094cf5b
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726ba2c708984140094cf5c
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726baf2dd62a815002e8e74
+2018-05-07 06:25:19,092 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726baf2dd62a815002e8e75
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726baf2dd62a815002e8e76
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726baf2dd62a815002e8e77
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726baf2dd62a815002e8e78
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726bc1add62a815002e8ea6
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726bc1add62a815002e8ea7
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726bc1add62a815002e8ea8
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726bc1add62a815002e8ea9
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726bc1add62a815002e8eaa
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c002708984140094d073
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c002708984140094d074
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c002708984140094d075
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c002708984140094d076
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c002708984140094d077
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c3da708984140094d0d9
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c3da708984140094d0da
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c3da708984140094d0db
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c3da708984140094d0dc
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c5a9f1498d1400e8eac4
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c5a9f1498d1400e8eac5
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c5a9f1498d1400e8eac6
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c5a9f1498d1400e8eac7
+2018-05-07 06:25:19,093 - qanet.data_utils - WARNING - Take away datum due to too long context, European_Union_law, 5726c5a9f1498d1400e8eac8
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Packet_switching, 57263b1638643c19005ad333
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Packet_switching, 57263b1638643c19005ad335
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Packet_switching, 57263b1638643c19005ad334
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Packet_switching, 57263b1638643c19005ad336
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Victoria_and_Albert_Museum, 57269c06708984140094cba1
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Victoria_and_Albert_Museum, 57269c06708984140094cba2
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Victoria_and_Albert_Museum, 57269c06708984140094cba3
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Victoria_and_Albert_Museum, 57269c06708984140094cba4
+2018-05-07 06:25:19,094 - qanet.data_utils - WARNING - Take away datum due to too long context, Victoria_and_Albert_Museum, 57269c06708984140094cba5
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long context, Pharmacy, 5726ddf6f1498d1400e8ee04
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long context, Pharmacy, 5726ddf6f1498d1400e8ee05
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long context, Pharmacy, 5726ddf6f1498d1400e8ee06
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long context, Pharmacy, 5726ddf6f1498d1400e8ee08
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long context, Pharmacy, 5726ddf6f1498d1400e8ee07
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long question, Construction, 57274e0d708984140094dbe8
+2018-05-07 06:25:19,095 - qanet.data_utils - WARNING - Take away datum due to too long question, Construction, 572753335951b619008f8854
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5727e6cbff5b5019007d97ee
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5727e6cbff5b5019007d97ef
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5727e6cbff5b5019007d97f0
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5727e6cbff5b5019007d97f1
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5727e6cbff5b5019007d97f2
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5729d36b1d04691400779607
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5729d36b1d04691400779608
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5729d36b1d04691400779609
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5729d36b1d0469140077960a
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Economic_inequality, 5729d36b1d0469140077960b
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Doctor_Who, 5727f44c2ca10214002d9a32
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Doctor_Who, 5727f44c2ca10214002d9a33
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Doctor_Who, 5727f44c2ca10214002d9a34
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Doctor_Who, 5727f44c2ca10214002d9a35
+2018-05-07 06:25:19,096 - qanet.data_utils - WARNING - Take away datum due to too long context, Doctor_Who, 5727f44c2ca10214002d9a36
+2018-05-07 06:25:19,097 - qanet.data_utils - WARNING - Take away datum due to too long question, Prime_number, 572995d46aef051400154fec
+2018-05-07 06:25:19,098 - qanet.data_utils - INFO - 107 data filtered, total data size: 10463
+2018-05-07 06:25:25,056 - __main__ - INFO - Preparing model...
+/usr/local/lib/python3.5/dist-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+WARNING:tensorflow:From /qanet/qanet/layers/wrappers.py:31: calling reduce_mean (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+2018-05-07 06:25:30,368 - qanet.model_utils - INFO - Model created freshly.
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+input_1 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_2 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_3 (InputLayer)            (None, 400, 16)      0                                            
+__________________________________________________________________________________________________
+input_5 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+input_6 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+input_7 (InputLayer)            (None, 30, 16)       0                                            
+__________________________________________________________________________________________________
+word_embedding_1 (WordEmbedding multiple             25167300    input_1[0][0]                    
+                                                                 input_2[0][0]                    
+                                                                 input_5[0][0]                    
+                                                                 input_6[0][0]                    
+__________________________________________________________________________________________________
+character_embedding_1 (Characte multiple             17624       input_3[0][0]                    
+                                                                 input_7[0][0]                    
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 400, 500)     0           word_embedding_1[0][0]           
+                                                                 character_embedding_1[0][0]      
+__________________________________________________________________________________________________
+concatenate_2 (Concatenate)     (None, 30, 500)      0           word_embedding_1[1][0]           
+                                                                 character_embedding_1[1][0]      
+__________________________________________________________________________________________________
+highway_network_1 (HighwayNetwo (None, 400, 500)     1002000     concatenate_1[0][0]              
+__________________________________________________________________________________________________
+highway_network_2 (HighwayNetwo (None, 30, 500)      1002000     concatenate_2[0][0]              
+__________________________________________________________________________________________________
+expand_dims_1 (ExpandDims)      (None, 1, 400, 500)  0           highway_network_1[0][0]          
+__________________________________________________________________________________________________
+expand_dims_2 (ExpandDims)      (None, 1, 30, 500)   0           highway_network_2[0][0]          
+__________________________________________________________________________________________________
+conv2d_1 (Conv2D)               multiple             448128      expand_dims_1[0][0]              
+                                                                 expand_dims_2[0][0]              
+__________________________________________________________________________________________________
+reshape_1 (Reshape)             (None, 400, 128)     0           conv2d_1[0][0]                   
+__________________________________________________________________________________________________
+reshape_2 (Reshape)             (None, 30, 128)      0           conv2d_1[1][0]                   
+__________________________________________________________________________________________________
+encoder_1 (Encoder)             multiple             151680      reshape_1[0][0]                  
+                                                                 reshape_2[0][0]                  
+__________________________________________________________________________________________________
+input_4 (InputLayer)            (None, 400)          0                                            
+__________________________________________________________________________________________________
+input_8 (InputLayer)            (None, 30)           0                                            
+__________________________________________________________________________________________________
+similarity_maxtirx_1 (Similarit (None, 400, 30)      384         encoder_1[0][0]                  
+                                                                 encoder_1[1][0]                  
+                                                                 input_4[0][0]                    
+                                                                 input_8[0][0]                    
+__________________________________________________________________________________________________
+lambda_1 (Lambda)               (None, 400, 30)      0           similarity_maxtirx_1[0][0]       
+__________________________________________________________________________________________________
+lambda_2 (Lambda)               (None, 400, 30)      0           similarity_maxtirx_1[0][0]       
+__________________________________________________________________________________________________
+context_query_attention_1 (Cont (None, 400, 128)     0           lambda_1[0][0]                   
+                                                                 encoder_1[1][0]                  
+__________________________________________________________________________________________________
+query_context_attention_1 (Quer (None, 400, 128)     0           lambda_1[0][0]                   
+                                                                 lambda_2[0][0]                   
+                                                                 encoder_1[0][0]                  
+__________________________________________________________________________________________________
+multiply_1 (Multiply)           (None, 400, 128)     0           encoder_1[0][0]                  
+                                                                 context_query_attention_1[0][0]  
+__________________________________________________________________________________________________
+multiply_2 (Multiply)           (None, 400, 128)     0           encoder_1[0][0]                  
+                                                                 query_context_attention_1[0][0]  
+__________________________________________________________________________________________________
+concatenate_3 (Concatenate)     (None, 400, 512)     0           encoder_1[0][0]                  
+                                                                 context_query_attention_1[0][0]  
+                                                                 multiply_1[0][0]                 
+                                                                 multiply_2[0][0]                 
+__________________________________________________________________________________________________
+encoder_2 (Encoder)             (None, 400, 512)     1841664     concatenate_3[0][0]              
+                                                                 encoder_8[0][0]                  
+                                                                 encoder_8[1][0]                  
+__________________________________________________________________________________________________
+encoder_3 (Encoder)             (None, 400, 512)     1841664     encoder_2[0][0]                  
+                                                                 encoder_2[1][0]                  
+                                                                 encoder_2[2][0]                  
+__________________________________________________________________________________________________
+encoder_4 (Encoder)             (None, 400, 512)     1841664     encoder_3[0][0]                  
+                                                                 encoder_3[1][0]                  
+                                                                 encoder_3[2][0]                  
+__________________________________________________________________________________________________
+encoder_5 (Encoder)             (None, 400, 512)     1841664     encoder_4[0][0]                  
+                                                                 encoder_4[1][0]                  
+                                                                 encoder_4[2][0]                  
+__________________________________________________________________________________________________
+encoder_6 (Encoder)             (None, 400, 512)     1841664     encoder_5[0][0]                  
+                                                                 encoder_5[1][0]                  
+                                                                 encoder_5[2][0]                  
+__________________________________________________________________________________________________
+encoder_7 (Encoder)             (None, 400, 512)     1841664     encoder_6[0][0]                  
+                                                                 encoder_6[1][0]                  
+                                                                 encoder_6[2][0]                  
+__________________________________________________________________________________________________
+encoder_8 (Encoder)             (None, 400, 512)     1841664     encoder_7[0][0]                  
+                                                                 encoder_7[1][0]                  
+                                                                 encoder_7[2][0]                  
+__________________________________________________________________________________________________
+position_prediction_1 (Position (None, 400)          1024        encoder_8[0][0]                  
+                                                                 encoder_8[1][0]                  
+                                                                 input_4[0][0]                    
+__________________________________________________________________________________________________
+position_prediction_2 (Position (None, 400)          1024        encoder_8[0][0]                  
+                                                                 encoder_8[2][0]                  
+                                                                 input_4[0][0]                    
+==================================================================================================
+Total params: 40,682,812
+Trainable params: 15,515,812
+Non-trainable params: 25,167,000
+__________________________________________________________________________________________________
+skip []
+Tensor("position_prediction_1_target:0", shape=(?, ?), dtype=float32)
+Tensor("position_prediction/Softmax:0", shape=(?, 400), dtype=float32)
+None
+Tensor("position_prediction_2_target:0", shape=(?, ?), dtype=float32)
+Tensor("position_prediction_1/Softmax:0", shape=(?, 400), dtype=float32)
+None
+2018-05-07 06:25:30,672 - __main__ - INFO - Start training.
+2018-05-07 06:25:43.465504: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-05-07 06:25:43.597013: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:898] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2018-05-07 06:25:43.597490: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1356] Found device 0 with properties: 
+name: GeForce GTX 1080 major: 6 minor: 1 memoryClockRate(GHz): 1.7335
+pciBusID: 0000:01:00.0
+totalMemory: 7.92GiB freeMemory: 7.57GiB
+2018-05-07 06:25:43.705292: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:898] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2018-05-07 06:25:43.705842: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1356] Found device 1 with properties: 
+name: GeForce GTX 1080 major: 6 minor: 1 memoryClockRate(GHz): 1.7335
+pciBusID: 0000:03:00.0
+totalMemory: 7.93GiB freeMemory: 7.63GiB
+2018-05-07 06:25:43.705948: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1435] Adding visible gpu devices: 0, 1
+2018-05-07 06:25:44.091893: I tensorflow/core/common_runtime/gpu/gpu_device.cc:923] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-05-07 06:25:44.091937: I tensorflow/core/common_runtime/gpu/gpu_device.cc:929]      0 1 
+2018-05-07 06:25:44.091943: I tensorflow/core/common_runtime/gpu/gpu_device.cc:942] 0:   N Y 
+2018-05-07 06:25:44.091947: I tensorflow/core/common_runtime/gpu/gpu_device.cc:942] 1:   Y N 
+2018-05-07 06:25:44.092231: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1053] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 7309 MB memory) -> physical GPU (device: 0, name: GeForce GTX 1080, pci bus id: 0000:01:00.0, compute capability: 6.1)
+2018-05-07 06:25:44.116609: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1053] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 7373 MB memory) -> physical GPU (device: 1, name: GeForce GTX 1080, pci bus id: 0000:03:00.0, compute capability: 6.1)
