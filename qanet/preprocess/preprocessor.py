@@ -85,6 +85,7 @@ class Preprocessor(object):
                 self._word_dict.move_to_unk(word)
 
         self._word_dict.freeze()
+        self._char_dict.freeze()
 
     def transform(self, data):
         """dataの各要素をTransformedOutputに変換したリストを返す
