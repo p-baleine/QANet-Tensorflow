@@ -39,7 +39,9 @@ class SQuADSequence(tf.keras.utils.Sequence):
                  max_context_length,
                  max_question_length,
                  max_word_length,
-                 sort):
+                 sort,
+                 # FIXME このretain_valid_data、いらないのでは
+                 retain_valid_data=False):
         self._batch_size = batch_size
         self._max_context_length = max_context_length
         self._max_question_length = max_question_length
@@ -49,7 +51,8 @@ class SQuADSequence(tf.keras.utils.Sequence):
         logger.info('Preprocessing data...')
         ids, self._x_set, self._y_set = self._preprocess(data)
 
-        self._valid_data = _ListedData(ids, self._x_set, self._y_set)
+        if retain_valid_data:
+            self._valid_data = _ListedData(ids, self._x_set, self._y_set)
 
     def __len__(self):
         return int(np.ceil(len(self._x_set) / float(self._batch_size)))
