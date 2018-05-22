@@ -158,8 +158,8 @@ class TestDataUtilsSQuADSequence(unittest.TestCase):
         eq_(len(batched_y), 2)
         # SQuADSequenceはanswerリストの先頭要素を返す
         # (どうせ学習データはanswerリストの要素数は1)
-        eq_(batched_y[0][0], data[2].y_list[0].answer_start)
-        eq_(batched_y[1][0], data[2].y_list[0].answer_end)
+        eq_(batched_y[0][0][data[2].y_list[0].answer_start], 1.)
+        eq_(batched_y[1][0][data[2].y_list[0].answer_end], 1.)
 
     def test_getitem_sort(self):
         size = 15

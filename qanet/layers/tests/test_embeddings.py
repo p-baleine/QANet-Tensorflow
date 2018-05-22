@@ -53,7 +53,7 @@ class TestCharacterEmbegging(unittest.TestCase):
             filter_size,
             embedding_initializer=tf.constant_initializer(embedding_matrix),
             conv_kernel_initializer=tf.constant_initializer(kernel_init),
-            conv_bias_initializer='zeros')(inputs)
+            conv_bias_initializer=tf.zeros_initializer())(inputs)
 
         model = create_model(inputs, x)
         chars = np.random.randint(V, size=(2, N, C))

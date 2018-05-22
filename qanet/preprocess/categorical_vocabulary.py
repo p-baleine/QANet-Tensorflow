@@ -20,6 +20,7 @@ class CategoricalVocabulary(object):
             self.UNK_ID: self.UNK_TOKEN}
         self._freeze = False
         self._unk_mapping = {}
+        self._freq = {}
 
     def get(self, category):
         category = self._normalize(category)
@@ -41,6 +42,10 @@ class CategoricalVocabulary(object):
             self._mapping[category] = category_id
             self._reverse_mapping[category_id] = category
 
+        if category not in self._freq:
+            self._freq[category] = 0
+        self._freq[category] += 1
+
     def reverse(self, category_id):
         return self._reverse_mapping[category_id]
 
@@ -56,6 +61,27 @@ class CategoricalVocabulary(object):
         self._unk_mapping[category] = 1
         # reverse_mappingからは消しちゃう
         del self._reverse_mapping[self._mapping[category]]
+
+    def trim(self, min_frequency):
+        self._freq = sorted(
+            sorted(
+                self._freq.items(),
+                key=lambda x: x[0]),
+            key=lambda x: x[1],
+            reverse=True)
+        self._mapping = OrderedDict()
+        self._mapping[self.PAD_TOKEN] = self.PAD_ID
+        self._mapping[self.UNK_TOKEN] = self.UNK_ID
+        self._reverse_mapping = {
+            self.PAD_ID: self.PAD_TOKEN,
+            self.UNK_ID: self.UNK_TOKEN}
+
+        for category, count in self._freq:
+            if count <= min_frequency:
+                break
+            category_id = len(self._mapping)
+            self._mapping[category] = category_id
+            self._reverse_mapping[category_id] = category
 
     def __len__(self):
         return len(self._mapping)
