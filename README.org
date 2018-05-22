@@ -26,7 +26,7 @@ docker build -t qanet .
 The following instructions assume that you've logged in to this container. To log in to this continer, run:
 
 #+BEGIN_SRC bash
-docker run --rm --name qanet -it -v $(pwd):/qanet -p 6006:6006 -p 8888:8888 qanet
+docker run --runtime nvidia --rm --name qanet -it -v $(pwd):/qanet -p 6006:6006 -p 8888:8888 qanet
 #+END_SRC
 
 *** Download data
@@ -62,6 +62,6 @@ make evaluate
 #+END_SRC
 
 
-** TODO
+** TODOs
 
 - Dropout
