@@ -5,7 +5,7 @@
   "max_context_length": 400,
   "max_question_length": 30,
   "max_word_length": 16,
-  "char_vocab_size": 1130,
+  "char_vocab_size": 208,
   "char_emb_dim": 8,
   "char_dim": 200,
   "char_conv_filter_size": 5,
