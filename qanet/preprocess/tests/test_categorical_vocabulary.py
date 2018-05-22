@@ -85,3 +85,28 @@ class TestCategoricalVocabulary(unittest.TestCase):
         vocab.move_to_unk('pen')
         vocab.freeze()
         eq_(vocab.get('pen'), CategoricalVocabulary.UNK_ID)
+
+    def test_trim(self):
+        vocab = CategoricalVocabulary()
+
+        for _ in range(5):
+            print('what??')
+            vocab.add('This')
+            vocab.add('is')
+            vocab.add('a')
+
+        vocab.add('pen')
+        vocab.add('pen')
+        vocab.add('pen')
+
+        vocab.freeze()
+
+        eq_(vocab.get('This'), 2)
+        eq_(vocab.get('is'), 3)
+        eq_(vocab.get('a'), 4)
+        eq_(vocab.get('pen'), 5)
+
+        vocab.trim(min_frequency=4)
+
+        ok_(vocab.get('This') != CategoricalVocabulary.UNK_ID)
+        eq_(vocab.get('pen'), CategoricalVocabulary.UNK_ID)

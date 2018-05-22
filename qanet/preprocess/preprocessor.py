@@ -51,12 +51,14 @@ class Label(namedtuple('Label', [
 class Preprocessor(object):
     """ExpandedArticleのデータの変換を行う"""
 
-    def __init__(self, word2vec, annotate, normalize=identity):
+    def __init__(self, word2vec, annotate, normalize=identity,
+                 char_count_threshold=0):
         self._word2vec = word2vec
         self._word_dict = CategoricalVocabulary(normalize=normalize)
         self._char_dict = CategoricalVocabulary(normalize=normalize)
         self._annotate = annotate
         self._vectors = None
+        self._char_count_threshold = char_count_threshold
 
     def fit(self, articles):
         """articlesのcontextとquestionから辞書を学習する
@@ -84,8 +86,12 @@ class Preprocessor(object):
                 # word2vec側になかったらunkにする
                 self._word_dict.move_to_unk(word)
 
-        self._word_dict.freeze()
+        logger.info('Triming character vocabulary by min frequency {}'.format(
+            self._char_count_threshold))
+        self._char_dict.trim(min_frequency=self._char_count_threshold)
+
         self._char_dict.freeze()
+        self._word_dict.freeze()
 
     def transform(self, data):
         """dataの各要素をTransformedOutputに変換したリストを返す

@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 @click.option('--dev-data', type=click.File())
 @click.option('--glove', type=click.Path(exists=True))
 @click.option('--out', type=click.Path(exists=True))
-def main(train_data, dev_data, glove, out):
+@click.option('--char-count-threshold', type=click.INT, default=50)
+def main(train_data, dev_data, glove, out, char_count_threshold):
     logger.info('Loading glove file...')
     wv = KeyedVectors.load_word2vec_format(glove, binary=True)
 
@@ -40,7 +41,12 @@ def main(train_data, dev_data, glove, out):
     dev_data = json.load(dev_data)
     dev_data = sum([expand_article(a) for a in dev_data['data']], [])
 
-    processor = Preprocessor(wv, annotate=annotate, normalize=normalize)
+    processor = Preprocessor(
+        wv,
+        annotate=annotate,
+        normalize=normalize,
+        char_count_threshold=char_count_threshold)
+
     logger.info('Fitting preprocessor...')
     processor.fit(train_data)
 

@@ -52,7 +52,8 @@ def main(data, raw_data_file, save_path, weights_file):
         batch_size=hparams.batch_size,
         max_context_length=hparams.max_context_length,
         max_question_length=hparams.max_question_length,
-        max_word_length=hparams.max_word_length)
+        max_word_length=hparams.max_word_length,
+        retain_valid_data=True)
 
     # TODO ファイル名指定しなくてもrestoreできるようにする
     processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
