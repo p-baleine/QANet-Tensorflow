@@ -165,6 +165,8 @@ def create_model(embedding_matrix, hparams):
 
 def multiple_encoder_block(encoders, x, num_gpus=1):
     for idx, encoder in enumerate(encoders):
-        with tf.device('/gpu:{}'.format(idx % num_gpus)):
+        # with tf.device('/gpu:{}'.format(idx % num_gpus)):
+        device = 0 if idx < 4 else 1
+        with tf.device('/gpu:{}'.format(device)):
             x = encoder(x)
     return x
