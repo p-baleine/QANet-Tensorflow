@@ -44,3 +44,23 @@ def load_data(data_path):
 
 def load_embedding(data_path):
     return np.load(os.path.join(data_path, 'vectors.npy'))
+
+def get_answer_spane(start_preds, end_preds):
+    best_score = 0.0
+    best_start_idx = 0
+    best_span = (0, 1)
+
+    for i in range(len(start_preds)):
+        start_score = start_preds[best_start_idx]
+
+        if start_score < start_preds[i]:
+            start_score = start_preds[i]
+            best_start_idx = i
+
+        end_score = end_preds[i]
+
+        if start_score * end_score > best_score:
+            best_span = (best_start_idx, i)
+            best_score = start_score * end_score
+
+    return best_span[0], best_span[1], best_score

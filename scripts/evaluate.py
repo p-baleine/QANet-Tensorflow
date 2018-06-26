@@ -23,7 +23,7 @@ sys.path.append(os.path.join(
 import squad
 
 from qanet import SQuADSequence
-from qanet import create_or_load_model
+from qanet import create_or_load_model, get_answer_spane
 from qanet import load_data, load_embedding, load_hparams
 from qanet.preprocess import expand_article
 from qanet.preprocess import Preprocessor
@@ -43,7 +43,8 @@ def main(data, raw_data_file, save_path, weights_file):
 
     logger.info('Loading data...')
 
-    _, dev_data = load_data(data)
+    # _, dev_data = load_data(data)
+    dev_data, _ = load_data(data)
     embedding = load_embedding(data)
 
     dev_gen = SQuADSequence(
@@ -63,20 +64,22 @@ def main(data, raw_data_file, save_path, weights_file):
     model = create_or_load_model(hparams, embedding, save_path,
                                  resume_from=weights_file)
 
-    predictions = model.predict(dev_gen.valid_data.x)
+    # predictions = model.predict(dev_gen.valid_data.x)
+    predictions = model.predict_generator(dev_gen, verbose=1)
     raw_dataset = json.load(raw_data_file)['data']
 
     print(json.dumps(squad.evaluate(
         raw_dataset, prediction_mapping(predictions, dev_gen, processor))))
 
 def prediction_mapping(predictions, dev_gen, processor):
-    predictions = zip(np.argmax(predictions[0], axis=1),
-                      np.argmax(predictions[1], axis=1))
+    starts, ends, _ = zip(*[get_answer_spane(s, e) for s, e in
+                            zip(predictions[0], predictions[1])])
     prediction_mapping = dict(
         (id, ' '.join(processor.reverse_word_ids(x.context[start:end+1])))
-         for id, x, (start, end) in zip(dev_gen.valid_data.ids,
+         for id, x, start, end in zip(dev_gen.valid_data.ids,
                                         dev_gen.valid_data.raw_x,
-                                        predictions))
+                                        starts,
+                                        ends))
     return prediction_mapping
 
 

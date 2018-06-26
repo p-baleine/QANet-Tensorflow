@@ -15,6 +15,7 @@ import click
 import json
 import logging
 import os
+import sys
 import tensorflow as tf
 
 from qanet import SQuADSequence
@@ -25,13 +26,20 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.option('--data', type=click.Path(exists=True))
-@click.option('--hparams', type=click.Path(exists=True))
+@click.option('--hparams', type=click.Path(exists=True), default=None)
 @click.option('--save-path', type=click.Path(exists=True))
-def main(data, hparams, save_path):
+@click.option('--resume-from', type=click.Path(exists=True), default=None)
+def main(data, hparams, save_path, resume_from):
     checkpoint_file_path = os.path.join(
         save_path, 'weights.{epoch:02d}-{val_loss:.2f}.hdf5')
 
-    hparams = load_hparams(hparams)
+    if hparams is not None and resume_from is not None:
+        logger.error('Only one of hparams or resume_from can '
+                     'be specified.')
+        sys.exit(1)
+
+    hparams = load_hparams(
+        hparams or os.path.join(save_path, 'hparams.json'))
 
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))
@@ -52,7 +60,7 @@ def main(data, hparams, save_path):
 
     logger.info('Preparing model...')
 
-    model = create_or_load_model(hparams, embedding, save_path)
+    model = create_or_load_model(hparams, embedding, save_path, resume_from)
 
     model.summary()
 
