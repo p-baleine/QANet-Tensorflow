@@ -1,6 +1,8 @@
 # Variables for preprocessing.
 TRAIN_DATA ?= data/train-v1.1.json
 DEV_DATA ?= data/dev-v1.1.json
+# TRAIN_DATA ?= data/small-data.json
+# DEV_DATA ?= data/small-data.json
 GLOVE ?= word2vec/glove.6B.300d.txt
 
 DATA_SAVE_DIR = data/preprocessed_$(shell date +'%Y%m%d%H%M')
@@ -13,6 +15,8 @@ GLOVE_WORD2VEC = word2vec/glove.6B.300d.word2vec.bin
 TRAIN_DATA_DIR = $(shell ls -d data/preprocessed_*  | sort | tail -n 1)
 HPARAMS_PATH = hparams/default.json
 LOG_DIR = /tmp/qanet/$(shell date +'%Y%m%d%H%M')
+RESUME_LOG_DIR = $(shell ls -d /tmp/qanet/* | sort | tail -n 1)
+RESUME_WEIGHTS_FILE = $(shell ls $(RESUME_LOG_DIR)/weights.* | sort -V | tail -n 1)
 
 # Variables for evaluation.
 EVAL_DATA_DIR = $(shell ls -d data/preprocessed_* | sort | tail -n 1)
@@ -36,11 +40,18 @@ $(GLOVE_WORD2VEC): $(GLOVE)
 
 train:
 	mkdir -p $(LOG_DIR) && \
-		python -m scripts.train \
+		python -u -m scripts.train \
 			--data $(TRAIN_DATA_DIR) \
 			--hparams $(HPARAMS_PATH) \
 			--save-path $(LOG_DIR) 2>&1 \
 		| tee $(LOG_DIR)/train.log
+
+resume:
+	python -u -m scripts.train \
+		--data $(TRAIN_DATA_DIR) \
+		--save-path $(RESUME_LOG_DIR) \
+		--resume-from $(RESUME_WEIGHTS_FILE) 2>&1 \
+	| tee -a $(RESUME_LOG_DIR)/train.log
 
 evaluate:
 	python -m scripts.evaluate \
