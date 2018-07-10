@@ -9,37 +9,28 @@
     --save_path /path/to/save_dir
 """
 
-# TODO em計算する時、contextが400越えるものは0, 0で答えを用意する
-
 import click
 import json
 import logging
-import os
-import sys
+import numpy as np
 import tensorflow as tf
 
-from qanet import SQuADSequence
-from qanet import create_or_load_model
-from qanet import load_data, load_embedding, load_hparams
+import qanet.model as qanet_model
+
+from qanet.model_utils import create_iterator, get_training_session_run_hooks
+from qanet.model_utils import load_data, load_embedding, load_hparams
+from qanet.model_utils import monitored_session
 
 logger = logging.getLogger(__name__)
+
+tf.logging.set_verbosity(tf.logging.INFO)
 
 @click.command()
 @click.option('--data', type=click.Path(exists=True))
 @click.option('--hparams', type=click.Path(exists=True), default=None)
 @click.option('--save-path', type=click.Path(exists=True))
-@click.option('--resume-from', type=click.Path(exists=True), default=None)
-def main(data, hparams, save_path, resume_from):
-    checkpoint_file_path = os.path.join(
-        save_path, 'weights.{epoch:02d}-{val_loss:.2f}.hdf5')
-
-    if hparams is not None and resume_from is not None:
-        logger.error('Only one of hparams or resume_from can '
-                     'be specified.')
-        sys.exit(1)
-
-    hparams = load_hparams(
-        hparams or os.path.join(save_path, 'hparams.json'))
+def main(data, hparams, save_path):
+    hparams = load_hparams(save_path, hparams)
 
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))
@@ -49,46 +40,48 @@ def main(data, hparams, save_path, resume_from):
     train_data, dev_data = load_data(data)
     embedding = load_embedding(data)
 
-    seq_params = dict(
-        batch_size=hparams.batch_size,
-        max_context_length=hparams.max_context_length,
-        max_question_length=hparams.max_question_length,
-        max_word_length=hparams.max_word_length)
-
-    train_gen = SQuADSequence(train_data, sort=True, **seq_params)
-    dev_gen = SQuADSequence(dev_data, sort=False, **seq_params)
+    _, _, train_iterator = create_iterator(train_data, hparams, True)
+    _, _, dev_iterator = create_iterator(dev_data, hparams, False)
 
     logger.info('Preparing model...')
 
-    model = create_or_load_model(hparams, embedding, save_path, resume_from)
+    train_inputs, train_labels = train_iterator.get_next()
+    dev_inputs, dev_labels = dev_iterator.get_next()
 
-    model.summary()
+    model = qanet_model.QANet(embedding, hparams)
+    optimizer = tf.train.RMSPropOptimizer(
+        learning_rate=hparams.learning_rate)
+    train_loss = qanet_model.loss_fn(
+        model, train_inputs, train_labels, training=True)
+    grads = optimizer.compute_gradients(
+        train_loss, colocate_gradients_with_ops=True)
+    train_op = optimizer.apply_gradients(
+        grads, global_step=tf.train.get_or_create_global_step())
+    train_acc = qanet_model.accuracy_fn(
+        model, train_inputs, train_labels, hparams.batch_size, training=True)
 
-    model.compile(
-        optimizer=tf.keras.optimizers.RMSprop(hparams.learning_rate),
-        loss='categorical_crossentropy',
-        loss_weights=[.5, .5],
-        metrics=['accuracy'])
+    dev_loss = qanet_model.loss_fn(
+        model, dev_inputs, dev_labels, training=False)
+    dev_acc = qanet_model.accuracy_fn(
+        model, dev_inputs, dev_labels, hparams.batch_size, training=False)
 
-    logger.info('Start training.')
+    tf.summary.scalar('train_loss', train_loss)
+    tf.summary.scalar('dev_loss', dev_loss)
+    tf.summary.scalar('train_acc_p1', train_acc[0])
+    tf.summary.scalar('train_acc_p2', train_acc[1])
+    tf.summary.scalar('dev_acc_p1', dev_acc[0])
+    tf.summary.scalar('dev_acc_p2', dev_acc[1])
+    merged = tf.summary.merge_all()
 
-    model.fit_generator(
-        train_gen,
-        epochs=hparams.epochs,
-        verbose=2,
-        validation_data=dev_gen,
-        shuffle=False,
-        callbacks=[
-            tf.keras.callbacks.TerminateOnNaN(),
-            tf.keras.callbacks.TensorBoard(
-                save_path),
-            tf.keras.callbacks.ModelCheckpoint(
-                filepath=checkpoint_file_path,
-                period=5,
-                verbose=1),
-            tf.keras.callbacks.CSVLogger(
-                os.path.join(save_path, 'progress.csv'))
-        ])
+    logger.info('Start training...')
+
+    scaffold = tf.train.Scaffold()
+    hooks = get_training_session_run_hooks(
+        save_path, train_loss, dev_loss, scaffold)
+
+    with monitored_session(save_path, scaffold, hooks=hooks) as sess:
+        while not sess.should_stop():
+            sess.run([merged, train_op])
 
 if __name__ == '__main__':
     main()

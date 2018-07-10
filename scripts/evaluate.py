@@ -7,7 +7,6 @@
     --data /path/to/data \
     --raw-data-file /path/to/raw/squad/data/file \
     --save-path /path/to/save_dir \
-    --weights-file /path/to/saved/weights/file
 """
 
 import click
@@ -16,72 +15,74 @@ import logging
 import numpy as np
 import os
 import sys
+import tensorflow as tf
 
 sys.path.append(os.path.join(
     os.path.dirname(__file__), '..', 'SQuAD_scripts/'))
 
 import squad
 
-from qanet import SQuADSequence
-from qanet import create_or_load_model, get_answer_spane
-from qanet import load_data, load_embedding, load_hparams
+import qanet.model as qanet_model
+
+from qanet.model_utils import create_iterator, get_answer_spane
+from qanet.model_utils import load_data, load_embedding, load_hparams
+from qanet.model_utils import monitored_session
 from qanet.preprocess import expand_article
 from qanet.preprocess import Preprocessor
 
 logger = logging.getLogger(__name__)
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 @click.command()
 @click.option('--data', type=click.Path())
 @click.option('--save-path', type=click.Path(exists=True))
-@click.option('--weights-file', type=click.Path(exists=True))
 @click.option('--raw-data-file', type=click.File())
-def main(data, raw_data_file, save_path, weights_file):
-    hparams = load_hparams(os.path.join(save_path, 'hparams.json'))
+def main(data, save_path, raw_data_file):
+    hparams = load_hparams(save_path)
 
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))
 
     logger.info('Loading data...')
 
-    # _, dev_data = load_data(data)
-    dev_data, _ = load_data(data)
+    _, dev_data = load_data(data)
     embedding = load_embedding(data)
 
-    dev_gen = SQuADSequence(
-        dev_data,
-        sort=False,
-        batch_size=hparams.batch_size,
-        max_context_length=hparams.max_context_length,
-        max_question_length=hparams.max_question_length,
-        max_word_length=hparams.max_word_length,
-        retain_valid_data=True)
-
-    # TODO ファイル名指定しなくてもrestoreできるようにする
-    processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
+    id, _, iterator = create_iterator(dev_data, hparams, False, repeat=False)
+    inputs, _ = iterator.get_next()
 
     logger.info('Preparing model...')
 
-    model = create_or_load_model(hparams, embedding, save_path,
-                                 resume_from=weights_file)
+    model = qanet_model.QANet(embedding, hparams)
 
-    # predictions = model.predict(dev_gen.valid_data.x)
-    predictions = model.predict_generator(dev_gen, verbose=1)
+    logger.info('Starting prediction...')
+
+    prediction_op = model(inputs, training=False)
+    starts = []
+    ends = []
+
+    with monitored_session(save_path, tf.train.Scaffold()) as sess:
+        while not sess.should_stop():
+            start, end = sess.run(prediction_op)
+            starts += start.tolist()
+            ends += end.tolist()
+
+    # TODO ファイル名指定しなくてもrestoreできるようにする
+    processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
     raw_dataset = json.load(raw_data_file)['data']
 
     print(json.dumps(squad.evaluate(
-        raw_dataset, prediction_mapping(predictions, dev_gen, processor))))
+        raw_dataset, prediction_mapping(id, starts, ends, dev_data, processor))))
 
-def prediction_mapping(predictions, dev_gen, processor):
+def prediction_mapping(id, starts, ends, data, processor):
+    context_mapping = dict((d.id, d.x.context) for d in data)
     starts, ends, _ = zip(*[get_answer_spane(s, e) for s, e in
-                            zip(predictions[0], predictions[1])])
-    prediction_mapping = dict(
-        (id, ' '.join(processor.reverse_word_ids(x.context[start:end+1])))
-         for id, x, start, end in zip(dev_gen.valid_data.ids,
-                                        dev_gen.valid_data.raw_x,
-                                        starts,
-                                        ends))
-    return prediction_mapping
-
+                            zip(starts, ends)])
+    return dict(
+        (id, ' '.join(processor.reverse_word_ids(
+            context_mapping[id][start:end+1])))
+         for id, start, end in zip(id, starts, ends))
 
 if __name__ == '__main__':
     main()

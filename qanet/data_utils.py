@@ -8,115 +8,7 @@ from .preprocess import CategoricalVocabulary
 
 logger = logging.getLogger(__name__)
 
-class SQuADSequence(tf.keras.utils.Sequence):
-    """SQuADデータのSequence
-
-    qanet.preprocess.TransformedOutput形式のdataを処理する
-    max_context_lengthよりcontextが長いデータは除外される
-    max_question_lengthよりquestionが長いデータは除外される
-
-    返却されるデータは、
-      x: [
-        context,
-        context_unk_label,
-        context_chars,
-        context_mask,
-        question,
-        question_unk_label,
-        question_chars,
-        question_mask
-      ]
-      y: [
-        answer_start,
-        answer_end
-      ]
-    yについてはy答えのリストの先頭要素を返す
-    """
-
-    def __init__(self,
-                 data,
-                 batch_size,
-                 max_context_length,
-                 max_question_length,
-                 max_word_length,
-                 sort,
-                 # FIXME このretain_valid_data、いらないのでは
-                 retain_valid_data=False):
-        self._batch_size = batch_size
-        self._max_context_length = max_context_length
-        self._max_question_length = max_question_length
-        self._max_word_length = max_word_length
-        self._sort = sort
-
-        logger.info('Preprocessing data...')
-        ids, self._x_set, self._y_set = self._preprocess(data)
-
-        if retain_valid_data:
-            self._valid_data = _ListedData(ids, self._x_set, self._y_set)
-
-    def __len__(self):
-        return int(np.ceil(len(self._x_set) / float(self._batch_size)))
-
-    def __getitem__(self, idx):
-        batch_idx = slice(idx * self._batch_size, (idx + 1) * self._batch_size)
-        x = self._x_set[batch_idx]
-        y = self._y_set[batch_idx]
-
-        batch_x = [np.array([getattr(x_, f) for x_ in x])
-                   for f in x[0]._fields]
-        batch_y = [
-            tf.keras.utils.to_categorical(
-                [y_[0] for y_ in y], num_classes=self._max_context_length),
-            tf.keras.utils.to_categorical(
-                [y_[1] for y_ in y], num_classes=self._max_context_length)]
-
-        return batch_x, batch_y
-
-    def _preprocess(self, data):
-        valid_data = []
-
-        # contextまたはquestionが長すぎるものはフィルタリングする
-        for idx, datum in enumerate(data):
-            if len(datum.x.context) > self._max_context_length:
-                logger.warn('Take away datum due to too long context'
-                            ', {}, {}'.format(datum.title, datum.id))
-                continue
-
-            if len(datum.x.question) > self._max_question_length:
-                logger.warn('Take away datum due to too long question'
-                            ', {}, {}'.format(datum.title, datum.id))
-                continue
-
-            valid_data.append(datum)
-
-        logger.info('{} data filtered, total data size: {}'.format(
-            len(data) - len(valid_data), len(valid_data)))
-
-        if self._sort:
-            # batch the examples by length
-            valid_data = sorted(valid_data, key=lambda d: len(d.x.context))
-
-        ids = [datum.id for datum in valid_data]
-
-        x_set_ = [pad_datum(datum.x,
-                            max_context_length=self._max_context_length,
-                            max_question_length=self._max_question_length,
-                            max_word_length=self._max_word_length)
-                  for datum in valid_data]
-        # yは、trainデータにおいて答えを一つしか含まないので、これを取り出して返す
-        y_set_ = [[datum.y_list[0].answer_start, datum.y_list[0].answer_end]
-                  for datum in valid_data]
-
-        return ids, x_set_, y_set_
-
-    @property
-    def valid_data(self):
-        """前処理でフィルタリングされなかったデータを返す
-        idとの紐づけが欲しい評価時用のプロパティ
-        """
-        return self._valid_data
-
-class PaddedDatum(namedtuple('PaddedDatum', [
+class PaddedInput(namedtuple('PaddedInput', [
         'context',
         'context_unk_label',
         'context_chars',
@@ -127,7 +19,60 @@ class PaddedDatum(namedtuple('PaddedDatum', [
         'question_mask'])):
     __slots__ = ()
 
-def pad_datum(datum,
+def create_transposed_data(
+        raw_data,
+        max_context_length,
+        max_question_length,
+        max_word_length,
+        do_sort):
+    """学習用に加工したデータを返す
+
+    qanet.preprocess.TransformedOutput形式のdataを処理する
+    max_context_lengthよりcontextが長いデータは除外される
+    max_question_lengthよりquestionが長いデータは除外される
+    """
+    valid_data = []
+
+    # contextとquestionが閾値を越えていた場合これを除く
+    for datum in raw_data:
+        if len(datum.x.context) > max_context_length:
+            logger.warn('Take away datum due to too long context'
+                        ', {}, {}'.format(datum.title, datum.id))
+            continue
+
+        if len(datum.x.question) > max_question_length:
+            logger.warn('Take away datum due to too long question'
+                        ', {}, {}'.format(datum.title, datum.id))
+            continue
+
+        valid_data.append(datum)
+
+    logger.info('{} data filtered, total data size: {}'.format(
+        len(raw_data) - len(valid_data), len(valid_data)))
+
+    if do_sort:
+        # batch the examples by length
+        valid_data = sorted(valid_data, key=lambda d: len(d.x.context))
+
+    # `x`をパディング
+    valid_data = [d._replace(
+        x=pad_input(d.x,
+                    max_context_length=max_context_length,
+                    max_question_length=max_question_length,
+                    max_word_length=max_word_length)) for d in valid_data]
+
+    id, title, x, y = list(zip(*valid_data))
+
+    # 学習時には答えの先頭要素のみを用いる
+    y = [(y_[0].answer_start, y_[0].answer_end) for y_ in y]
+
+    return (
+        id,
+        title,
+        PaddedInput._make([np.array(x_) for x_ in zip(*x)]),
+        tuple(np.array(y_) for y_ in zip(*y)))
+
+def pad_input(datum,
               max_context_length,
               max_question_length,
               max_word_length,
@@ -156,12 +101,13 @@ def pad_datum(datum,
             + [[pad_id] * max_word_length] * (max_sentence_length - len(x)))
 
     def mask(x, max_length):
-        return np.array([1.] * len(x) + [0.] * (max_length - len(x)))
+        return np.array([1.] * len(x) + [0.] * (max_length - len(x)),
+                        dtype=np.float32)
 
     assert len(datum.context) <= max_context_length
     assert len(datum.question) <= max_question_length
 
-    return PaddedDatum(
+    return PaddedInput(
         context=pad(datum.context, max_context_length),
         context_unk_label=pad(datum.context_unk_label, max_context_length),
         context_chars=pad_chars(datum.context_chars, max_context_length),
@@ -170,22 +116,3 @@ def pad_datum(datum,
         question_unk_label=pad(datum.question_unk_label, max_question_length),
         question_chars=pad_chars(datum.question_chars, max_question_length),
         question_mask=mask(datum.question, max_question_length))
-
-class _ListedData(object):
-    def __init__(self, ids, x, y):
-        self._ids = ids
-        self._x = x
-        self._y = y
-
-    @property
-    def ids(self):
-        return self._ids
-
-    @property
-    def x(self):
-        return [np.array([getattr(x_, f) for x_ in self._x])
-                for f in self._x[0]._fields]
-
-    @property
-    def raw_x(self):
-        return self._x

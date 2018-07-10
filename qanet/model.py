@@ -7,166 +7,158 @@ from .layers.core import HighwayNetwork, PositionPrediction, ExpandDims
 from .layers.embeddings import WordEmbedding, CharacterEmbedding
 from .layers.encoder import Encoder
 
-def create_model(embedding_matrix, hparams):
-    """QANet
+class QANet(tf.keras.Model):
+    def __init__(self, embedding_matrix, hparams, **kwargs):
+        super(QANet, self).__init__(**kwargs)
 
-    引数:
-      hparams/default.jsonを参照
+        self.dim = hparams.dim
+        self.N = hparams.max_context_length
+        self.M = hparams.max_question_length
+        self.num_gpus = hparams.num_gpus
 
-      TODO 詳細を記述する
+        self.word_embedding = WordEmbedding(embedding_matrix)
+        self.char_embedding = CharacterEmbedding(
+            vocab_size=hparams.char_vocab_size,
+            emb_dim=hparams.char_emb_dim,
+            out_dim=hparams.char_dim,
+            filter_size=hparams.char_conv_filter_size)
 
-    Input:
-      context: (batch_size, N)
-      context_unk_label: (batch_size, N)
-      context_chars: (batch_size, N, W)
-      context_mask: (batch_size, N)
-      question: (batch_size, M)
-      question_unk_label: (batch_size, M)
-      question_chars: (batch_size, M, W)
-      question_mask: (batch_size, M)
+        self.context_highway = HighwayNetwork(hparams.highway_num_layers)
+        self.question_highway = HighwayNetwork(hparams.highway_num_layers)
 
-    Output:
-      (batch_size, N)
-    """
+        # the input of this layer is a vector of dimension
+        # p1 + p2 = 500 for each individual word, which is immediately
+        # mapped to d = 128 by a one-dimensional convolution.
+        self.projection = tf.keras.layers.Conv2D(
+            filters=hparams.dim,
+            kernel_size=(1, hparams.embedding_encoder_filter_size),
+            padding='same',
+            activation='relu')
 
-    # Input
+        self.embedding_encoder = Encoder(
+            dim=hparams.dim,
+            filter_size=hparams.embedding_encoder_filter_size,
+            num_conv_layers=hparams.embedding_encoder_num_conv_layers,
+            num_heads=hparams.embedding_encoder_num_heads)
 
-    N = hparams.max_context_length
-    M = hparams.max_question_length
-    W = hparams.max_word_length
+        self.similarity_matrix = SimilarityMaxtirx()
+        self.context_query_attention = ContextQueryAttention()
+        self.query_context_attention = QueryContextAttention()
 
-    in_context = tf.keras.layers.Input((N,))
-    in_context_unk_label = tf.keras.layers.Input((N,))
-    in_context_chars = tf.keras.layers.Input((N, W))
-    in_context_mask = tf.keras.layers.Input((N,))
-    in_question = tf.keras.layers.Input((M,))
-    in_question_unk_label = tf.keras.layers.Input((M,))
-    in_question_chars = tf.keras.layers.Input((M, W))
-    in_question_mask = tf.keras.layers.Input((M,))
+        # Model encoders
+        self.model_encoders = []
 
-    # Input Embedding Layer.
+        for block in range(hparams.model_encoder_num_blocks):
+            e = Encoder(
+                dim=hparams.dim * 4,
+                filter_size=hparams.model_encoder_filter_size,
+                num_conv_layers=hparams.model_encoder_num_conv_layers,
+                num_heads=hparams.model_encoder_num_heads)
+            self.model_encoders.append(e)
+            # make keras.Model classes to track all the variables in
+            # a list of Layer objects.
+            setattr(self, 'model_encoder-{}'.format(block), e)
 
-    word_embedding_layer = WordEmbedding(embedding_matrix)
-    char_embedding_layer = CharacterEmbedding(
-        vocab_size=hparams.char_vocab_size,
-        emb_dim=hparams.char_emb_dim,
-        out_dim=hparams.char_dim,
-        filter_size=hparams.char_conv_filter_size)
+        self.position_prediction1 = PositionPrediction()
+        self.porision_prediction2 = PositionPrediction()
 
-    context_emb = word_embedding_layer((in_context, in_context_unk_label))
-    question_emb = word_embedding_layer((in_question, in_question_unk_label))
+    def call(self, inputs, training):
+        # TODO trainingで切り分け
+        in_context, in_context_unk_label,\
+            in_context_chars, in_context_mask,\
+            in_question, in_question_unk_label,\
+            in_question_chars, in_question_mask = inputs
 
-    context_char_emb = char_embedding_layer(in_context_chars)
-    question_char_emb = char_embedding_layer(in_question_chars)
+        # Input Embedding Layer.
 
-    context = tf.keras.layers.Concatenate(axis=2)([
-        context_emb, context_char_emb])
-    question = tf.keras.layers.Concatenate(axis=2)([
-        question_emb, question_char_emb])
+        context_emb = self.word_embedding((in_context, in_context_unk_label))
+        question_emb = self.word_embedding((in_question, in_question_unk_label))
 
-    context = HighwayNetwork(hparams.highway_num_layers)(context)
-    question = HighwayNetwork(hparams.highway_num_layers)(question)
+        context_char_emb = self.char_embedding(in_context_chars)
+        question_char_emb = self.char_embedding(in_question_chars)
 
-    # Embedding Encoder Layer.
+        context = tf.concat([context_emb, context_char_emb], axis=2)
+        question = tf.concat([question_emb, question_char_emb], axis=2)
 
-    # the input of this layer is a vector of dimension
-    # p1 + p2 = 500 for each individual word, which is immediately
-    # mapped to d = 128 by a one-dimensional convolution.
-    projection_conv = tf.keras.layers.Conv2D(
-        filters=hparams.dim,
-        kernel_size=(1, hparams.embedding_encoder_filter_size),
-        padding='same',
-        activation='relu')
+        context = self.context_highway(context)
+        question = self.question_highway(question)
 
-    # (batch_size, 1, N, input_dim)
-    context = ExpandDims(1)(context)
-    # (batch_size, 1, M, input_dim)
-    question = ExpandDims(1)(question)
-    # (batch_size, 1, N, out_dim)
-    context = projection_conv(context)
-    # (batch_size, 1, M, out_dim)
-    question = projection_conv(question)
-    # (batch_size, N, out_dim)
-    context = tf.keras.layers.Reshape((N, hparams.dim))(context)
-    # (batch_size, M, out_dim)
-    question = tf.keras.layers.Reshape((M, hparams.dim))(question)
+        # Embedding Encoder Layer.
 
-    # We also share weights of the context and question encoder
-    embedding_encoder = Encoder(
-        dim=hparams.dim,
-        filter_size=hparams.embedding_encoder_filter_size,
-        num_conv_layers=hparams.embedding_encoder_num_conv_layers,
-        num_heads=hparams.embedding_encoder_num_heads)
+        # (batch_size, 1, N, input_dim)
+        context = tf.expand_dims(context, axis=1)
+        # (batch_size, 1, M, input_dim)
+        question = tf.expand_dims(question, axis=1)
+        # (batch_size, 1, N, out_dim)
+        context = self.projection(context)
+        # (batch_size, 1, M, out_dim)
+        question = self.projection(question)
+        # (batch_size, N, out_dim)
+        context = tf.reshape(context, [-1, self.N, self.dim])
+        # (batch_size, M, out_dim)
+        question = tf.reshape(question, [-1, self.M, self.dim])
+        # (batch_size, N, out_dim)
+        context = self.embedding_encoder(context)
+        # (batch_size, M, out_dim)
+        question = self.embedding_encoder(question)
 
-    # 今は(paperに従い)embedding_encoderは1ブロックのみ対応
-    assert hparams.embedding_encoder_num_blocks == 1
+        # Context-Query Attention Layer.
 
-    # (batch_size, N, out_dim)
-    context = embedding_encoder(context)
-    # (batch_size, M, out_dim)
-    question = embedding_encoder(question)
+        S = self.similarity_matrix(
+            (context, question, in_context_mask, in_question_mask))
+        S_r = tf.nn.softmax(S, 2)
+        S_c = tf.nn.softmax(S, 1)
+        A = self.context_query_attention((S_r, question))
+        B = self.query_context_attention((S_r, S_c, context))
 
-    # Context-Query Attention Layer.
+        # Model Encoder Layer.
 
-    S = SimilarityMaxtirx()((
-        context,
-        question,
-        in_context_mask,
-        in_question_mask))
+        x = tf.concat([
+            context,
+            A,
+            context * A,
+            context * B
+        ], axis=2)
 
-    S_r = tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x, 2))(S)
-    S_c = tf.keras.layers.Lambda(lambda x: tf.nn.softmax(x, 1))(S)
-    A = ContextQueryAttention()((S_r, question))
-    B = QueryContextAttention()((S_r, S_c, context))
+        M_0 = self._multiple_encoder_block(x)
+        M_1 = self._multiple_encoder_block(M_0)
+        M_2 = self._multiple_encoder_block(M_1)
 
-    # Model Encoder Layer.
+        # Output layer.
 
-    # We share weights between each of the 3 repetitions
-    # of the model encoder.
-    num_blocks = hparams.model_encoder_num_blocks
-    num_gpus = hparams.num_gpus
+        p_1 = self.position_prediction1((M_0, M_1, in_context_mask))
+        p_2 = self.porision_prediction2((M_0, M_2, in_context_mask))
 
-    model_encoders = []
+        return [p_1, p_2]
 
-    for b in range(num_blocks):
-        model_encoders.append(Encoder(
-            dim=hparams.dim * 4,
-            filter_size=hparams.model_encoder_filter_size,
-            num_conv_layers=hparams.model_encoder_num_conv_layers,
-            num_heads=hparams.model_encoder_num_heads))
+    def _multiple_encoder_block(self, x):
+        # TODO Currentry only 2 gpus are assumed.
+        for idx, encoder in enumerate(self.model_encoders):
+            device = 0 if idx < 3 else 1
+            with tf.device('/gpu:{}'.format(device)):
+                x = encoder(x)
+        return x
 
-    x = tf.keras.layers.Concatenate(axis=2)([
-        context,
-        A,
-        tf.keras.layers.Multiply()([context, A]),
-        tf.keras.layers.Multiply()([context, B])])
+def loss_fn(model, inputs, targets, training):
+    def compute_loss(labels, outputs):
+        return tf.reduce_mean(
+            tf.nn.sparse_softmax_cross_entropy_with_logits(
+                labels=labels, logits=outputs))
 
-    M_0 = multiple_encoder_block(model_encoders, x, num_gpus)
-    M_1 = multiple_encoder_block(model_encoders, M_0, num_gpus)
-    M_2 = multiple_encoder_block(model_encoders, M_1, num_gpus)
+    l1, l2 = targets
+    o1, o2 = model(inputs, training=training)
 
-    # Output layer.
+    return compute_loss(l1, o1) + compute_loss(l2, o2)
 
-    p_1 = PositionPrediction()((M_0, M_1, in_context_mask))
-    p_2 = PositionPrediction()((M_0, M_2, in_context_mask))
+def accuracy_fn(model, inputs, targets, batch_size, training):
+    def compute_accuracy(predictions, labels):
+        return tf.reduce_sum(tf.cast(
+            tf.equal(predictions, labels), dtype=tf.float32)) / batch_size
 
-    return tf.keras.models.Model(
-        inputs=[
-            in_context,
-            in_context_unk_label,
-            in_context_chars,
-            in_context_mask,
-            in_question,
-            in_question_unk_label,
-            in_question_chars,
-            in_question_mask,
-        ],
-        outputs=[p_1, p_2])
+    l1, l2 = targets
+    l1, l2 = tf.cast(l1, tf.int64), tf.cast(l2, tf.int64)
+    o1, o2 = model(inputs, training=training)
+    p1 = tf.argmax(o1, axis=1, output_type=tf.int64)
+    p2 = tf.argmax(o2, axis=1, output_type=tf.int64)
 
-def multiple_encoder_block(encoders, x, num_gpus=1):
-    for idx, encoder in enumerate(encoders):
-        # with tf.device('/gpu:{}'.format(idx % num_gpus)):
-        device = 0 if idx < 4 else 1
-        with tf.device('/gpu:{}'.format(device)):
-            x = encoder(x)
-    return x
+    return compute_accuracy(p1, l1), compute_accuracy(p2, l2)
