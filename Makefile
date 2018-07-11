@@ -12,16 +12,14 @@ GLOVE_WORD2VEC = word2vec/glove.6B.300d.word2vec.bin
 
 # Variables for training.
 # Use latest directory as default.
-TRAIN_DATA_DIR = $(shell ls -d data/preprocessed_*  | sort | tail -n 1)
-HPARAMS_PATH = hparams/default.json
+TRAIN_DATA_DIR ?= $(shell ls -d data/preprocessed_*  | sort | tail -n 1)
+HPARAMS_PATH ?= hparams/default.json
 LOG_DIR = /tmp/qanet/$(shell date +'%Y%m%d%H%M')
 RESUME_LOG_DIR = $(shell ls -d /tmp/qanet/* | sort | tail -n 1)
-RESUME_WEIGHTS_FILE = $(shell ls $(RESUME_LOG_DIR)/weights.* | sort -V | tail -n 1)
 
 # Variables for evaluation.
-EVAL_DATA_DIR = $(shell ls -d data/preprocessed_* | sort | tail -n 1)
+EVAL_DATA_DIR ?= $(shell ls -d data/preprocessed_* | sort | tail -n 1)
 EVAL_LOG_DIR = $(shell ls -d /tmp/qanet/* | sort | tail -n 1)
-EVAL_WEIGHTS_FILE = $(shell ls $(EVAL_LOG_DIR)/weights.* | sort -V | tail -n 1)
 
 all: $(PREPROCESSED_TRAIN_DATA) $(PREPROCESSED_DEV_DATA)
 
@@ -49,16 +47,14 @@ train:
 resume:
 	python -u -m scripts.train \
 		--data $(TRAIN_DATA_DIR) \
-		--save-path $(RESUME_LOG_DIR) \
-		--resume-from $(RESUME_WEIGHTS_FILE) 2>&1 \
+		--save-path $(RESUME_LOG_DIR) 2>&1 \
 	| tee -a $(RESUME_LOG_DIR)/train.log
 
 evaluate:
 	python -m scripts.evaluate \
 		--data $(EVAL_DATA_DIR) \
 		--raw-data-file $(DEV_DATA) \
-		--save-path $(EVAL_LOG_DIR) \
-		--weights-file $(EVAL_WEIGHTS_FILE)
+		--save-path $(EVAL_LOG_DIR)
 
 test:
 	nosetests

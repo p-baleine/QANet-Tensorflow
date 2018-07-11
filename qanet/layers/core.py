@@ -48,9 +48,6 @@ class HighwayNetwork(tf.keras.models.Model):
             y = layer(y)
         return y
 
-    def get_config(self):
-        return dict()
-
 class PositionEncoding(tf.keras.layers.Lambda):
     def __init__(self, **kwargs):
         super(PositionEncoding, self).__init__(
@@ -95,7 +92,7 @@ class PositionPrediction(tf.keras.layers.Layer):
         logits = exp_mask(logits, context_mask)
         # shape情報が落ちちゃうので明示的にreshapeしておく
         logits = tf.reshape(logits, [-1, M_a.shape[1]])
-        return tf.nn.softmax(logits)
+        return logits
 
     def compute_output_shape(self, input_shape):
         M_a_shape, _, _ = input_shape

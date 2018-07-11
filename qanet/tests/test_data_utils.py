@@ -3,7 +3,7 @@ import unittest
 
 from nose.tools import ok_, eq_
 
-from ..data_utils import SQuADSequence, pad_datum
+from ..data_utils import create_transposed_data, pad_input
 from ..preprocess import Input, Label, TransformedOutput
 from ..preprocess.categorical_vocabulary import CategoricalVocabulary
 
@@ -12,13 +12,13 @@ PAD_ID = CategoricalVocabulary.PAD_ID
 np.random.seed(1234)
 
 class TestDataUtils(unittest.TestCase):
-    def test_pad_datum(self):
+    def test_pad_input(self):
         datum = create_random_input()
 
         ok_(any([len(x) > 12 for x in datum.context_chars]))
         ok_(any([len(x) > 12 for x in datum.question_chars]))
 
-        padded = pad_datum(datum,
+        padded = pad_input(datum,
                            max_context_length=150,
                            max_question_length=15,
                            max_word_length=12)
@@ -81,13 +81,13 @@ class TestDataUtils(unittest.TestCase):
             padded.question_mask,
             np.array([1.] * 10 + [0.] * 5))))
 
-    def test_pad_datum_illegal_length(self):
+    def test_pad_input_illegal_length(self):
         datum = create_random_input()
 
         err = None
 
         try:
-            padded = pad_datum(datum,
+            padded = pad_input(datum,
                                max_context_length=90,
                                max_question_length=15,
                                max_word_length=12)
@@ -99,7 +99,7 @@ class TestDataUtils(unittest.TestCase):
         err2 = None
 
         try:
-            padded = pad_datum(datum,
+            padded = pad_input(datum,
                                max_context_length=150,
                                max_question_length=5,
                                max_word_length=12)
@@ -108,10 +108,9 @@ class TestDataUtils(unittest.TestCase):
 
         ok_(err2 is not None)
 
-class TestDataUtilsSQuADSequence(unittest.TestCase):
-    def test_getitem(self):
+    def test_create_transposed_data(self):
         size = 15
-        data = [
+        raw_data = [
             TransformedOutput(
             id='hoge',
             title='piyo',
@@ -125,45 +124,31 @@ class TestDataUtilsSQuADSequence(unittest.TestCase):
             y_list=create_random_label_list(3))
                 for _ in range(size - 2)]
 
-        batch_size = 4
-
-        sequence = SQuADSequence(
-            data,
-            batch_size=batch_size,
+        _, _, inputs, labels = create_transposed_data(
+            raw_data,
             max_context_length=110,
             max_question_length=15,
             max_word_length=12,
-            sort=True)
+            do_sort=True)
 
-        eq_(len(sequence), size // batch_size + 1)
-
-        batched_x, batched_y = sequence[0]
-
-        eq_(batched_x[0].shape[0], batch_size)
-        eq_(batched_y[0].shape[0], batch_size)
-
-        # mask分2つ増えている
-        eq_(len(batched_x), len(data[0].x) + 2)
         # パディング分増えている
-        eq_(batched_x[0].shape[1], 110)
+        eq_(inputs.context.shape, (15, 110))
         # 一応中身も確認(ソートされているので先頭要素はdata[2])
         ok_(all(np.isclose(
-            batched_x[0][0][:100], data[2].x.context)))
+            inputs.context[0][:100], raw_data[2].x.context)))
         ok_(all(np.isclose(
-            batched_x[0][0][100:], [PAD_ID] * 10)))
+            inputs.context[0][100:], [PAD_ID] * 10)))
         ok_(all(np.isclose(
-            batched_x[1][0][:100], data[2].x.context_unk_label)))
+            inputs.context_unk_label[0][:100], raw_data[2].x.context_unk_label)))
 
-        # answerはanswer_startとanswer_endだけ
-        eq_(len(batched_y), 2)
         # SQuADSequenceはanswerリストの先頭要素を返す
         # (どうせ学習データはanswerリストの要素数は1)
-        eq_(batched_y[0][0][data[2].y_list[0].answer_start], 1.)
-        eq_(batched_y[1][0][data[2].y_list[0].answer_end], 1.)
+        eq_(labels[0][0], raw_data[2].y_list[0][0])
+        eq_(labels[1][0], raw_data[2].y_list[0][1])
 
-    def test_getitem_sort(self):
+    def test_create_transposed_data_without_sort(self):
         size = 15
-        data = [
+        raw_data = [
             TransformedOutput(
             id='hoge',
             title='piyo',
@@ -177,58 +162,53 @@ class TestDataUtilsSQuADSequence(unittest.TestCase):
             y_list=create_random_label_list(3))
                 for _ in range(size - 2)]
 
-        batch_size = 4
-
-        sequence = SQuADSequence(
-            data,
-            batch_size=batch_size,
+        _, _, inputs, labels = create_transposed_data(
+            raw_data,
             max_context_length=110,
             max_question_length=15,
             max_word_length=12,
-            sort=False)
-
-        batched_x, batched_y = sequence[0]
+            do_sort=False)
 
         # 一応中身も確認(ソートされていないので先頭要素はdata[0])
         ok_(all(np.isclose(
-            batched_x[0][0][:100], data[0].x.context[:100])))
+            inputs.context[0][:100], raw_data[0].x.context[:100])))
 
-    def test_getitem_filter_long_context_item(self):
+    def test_create_transposed_data_filter_long_context_item(self):
         max_context_length = 100
         max_question_length = 15
         batch_size = 4
         size = 15
 
-        data = [TransformedOutput(
+        raw_data = [TransformedOutput(
             id='hoge',
             title='piyo',
             x=create_random_input(),
             y_list=create_random_label_list(3))
                 for _ in range(size)]
 
-        data[1] = data[1]._replace(x=create_random_input(content_length=110))
-        ok_(len(data[1].x.context) > max_context_length)
-        data[2] = data[2]._replace(x=create_random_input(question_length=17))
-        ok_(len(data[2].x.question) > max_question_length)
+        raw_data[1] = raw_data[1]._replace(
+            x=create_random_input(content_length=110))
+        ok_(len(raw_data[1].x.context) > max_context_length)
+        raw_data[2] = raw_data[2]._replace(
+            x=create_random_input(question_length=17))
+        ok_(len(raw_data[2].x.question) > max_question_length)
+
+        print(len(raw_data))
 
         # これでidx=1と2の要素が除かれて、idx=3の要素が前につめられる
 
-        sequence = SQuADSequence(
-            data,
-            batch_size=batch_size,
+        _, _, inputs, labels = create_transposed_data(
+            raw_data,
             max_context_length=max_context_length,
             max_question_length=max_question_length,
             max_word_length=12,
-            sort=True)
+            do_sort=True)
 
-        eq_(len(sequence), size // batch_size + 1)
-        # 15個が13個になってbatch_size=4なので、最後のバッチには要素が1つ含まれる
-        ok_(len(sequence[len(sequence) - 1]), 1)
-
-        batched_x, batched_y = sequence[0]
+        eq_(len(inputs.context), size - 2)
+        eq_(len(labels[0]), size - 2)
 
         ok_(all(np.isclose(
-            batched_x[0][1][:100], data[3].x.context)))
+            inputs.context[1][:100], raw_data[3].x.context)))
 
 def create_random_input(content_length=100, question_length=10):
     return Input(

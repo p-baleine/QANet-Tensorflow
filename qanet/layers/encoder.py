@@ -64,7 +64,3 @@ class Encoder(tf.keras.models.Model):
         # (batch_size, N, dim)
         x = self.feed_forward(x)
         return x
-
-    def get_config(self):
-        # TODO 実装する
-        return dict()

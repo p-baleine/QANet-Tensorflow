@@ -11,8 +11,7 @@ class TestModelUtils(unittest.TestCase):
         start_preds = [.1, .6, .1, .05, .05]
         end_preds = [.4, .2, .05, .3, .05]
 
-        start, end, score = get_answer_spane(start_preds, end_preds)
+        start, end, _ = get_answer_spane(start_preds, end_preds)
 
         eq_(start, 1)
         eq_(end, 3)
-        eq_(score, 0.18)
