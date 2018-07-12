@@ -48,7 +48,8 @@ def main(data, save_path, raw_data_file):
     _, dev_data = load_data(data)
     embedding = load_embedding(data)
 
-    id, _, iterator = create_iterator(dev_data, hparams, False, repeat=False)
+    id, _, iterator, feed_dict = create_iterator(
+        dev_data, hparams, do_sort=False, repeat_count=None)
     inputs, _ = iterator.get_next()
 
     logger.info('Preparing model...')
@@ -62,6 +63,8 @@ def main(data, save_path, raw_data_file):
     ends = []
 
     with monitored_session(save_path, tf.train.Scaffold()) as sess:
+        sess.run(iterator.initializer, feed_dict=feed_dict)
+
         while not sess.should_stop():
             start, end = sess.run(prediction_op)
             starts += start.tolist()
