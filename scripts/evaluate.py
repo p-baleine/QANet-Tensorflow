@@ -27,7 +27,6 @@ import qanet.model as qanet_model
 from qanet.model_utils import create_iterator, get_answer_spane
 from qanet.model_utils import load_data, load_embedding, load_hparams
 from qanet.model_utils import monitored_session
-from qanet.preprocess import expand_article
 from qanet.preprocess import Preprocessor
 
 logger = logging.getLogger(__name__)
