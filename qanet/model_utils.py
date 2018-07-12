@@ -100,10 +100,10 @@ def get_training_session_run_hooks(
         train_loss,
         dev_loss,
         scaffold,
+        steps_per_epoch,
         log_steps=10,
         save_steps=100,
         summary_steps=1056//32):
-    # TODO epoch counter
     nan_hook = tf.train.NanTensorHook(train_loss)
     checkpoint_hook = tf.train.CheckpointSaverHook(
         save_path,
@@ -122,6 +122,7 @@ def get_training_session_run_hooks(
         scaffold=scaffold,
         output_dir=save_path,
         save_steps=summary_steps)
+    log_epoch_hook = LogEpochHook(steps_per_epoch)
 
     return [
         nan_hook,
@@ -129,4 +130,32 @@ def get_training_session_run_hooks(
         counter_hook,
         train_logging_hook,
         all_logging_hook,
-        summary_hook]
+        summary_hook,
+        log_epoch_hook]
+
+class LogEpochHook(tf.train.SessionRunHook):
+    """Hook that just output epoch count."""
+
+    def __init__(self, steps_per_epoch):
+        self._steps_per_epoch = steps_per_epoch
+        self._timer = tf.train.SecondOrStepTimer(
+            every_steps=1) # dummy parameter
+
+    def begin(self):
+        self._global_step_tensor = tf.train.get_global_step()
+
+        if self._global_step_tensor is None:
+            raise RuntimeError(
+                'Global step should be created to use LogEpochHook')
+
+    def before_run(self, run_context):
+        return tf.train.SessionRunArgs(self._global_step_tensor)
+
+    def after_run(self, run_context, run_values):
+        global_step = run_values.results
+
+        if global_step != 0 and global_step % self._steps_per_epoch == 0:
+            elapsed_time, _ = self._timer.update_last_triggered_step(global_step)
+            logger.info('Epoch {} ({} sec)'.format(
+                global_step // self._steps_per_epoch,
+                elapsed_time))

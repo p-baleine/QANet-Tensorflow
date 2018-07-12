@@ -30,6 +30,7 @@ tf.logging.set_verbosity(tf.logging.INFO)
 @click.option('--hparams', type=click.Path(exists=True), default=None)
 @click.option('--save-path', type=click.Path(exists=True))
 def main(data, hparams, save_path):
+    # TODO get char_vocab_size from Preprocessor
     hparams = load_hparams(save_path, hparams)
 
     logger.info('Hyper parameters:')
@@ -76,8 +77,9 @@ def main(data, hparams, save_path):
     logger.info('Start training...')
 
     scaffold = tf.train.Scaffold()
+    steps_per_epoch = len(train_data) // hparams.batch_size
     hooks = get_training_session_run_hooks(
-        save_path, train_loss, dev_loss, scaffold)
+        save_path, train_loss, dev_loss, scaffold, steps_per_epoch)
 
     with monitored_session(save_path, scaffold, hooks=hooks) as sess:
         while not sess.should_stop():
