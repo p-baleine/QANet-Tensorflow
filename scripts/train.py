@@ -13,6 +13,7 @@ import click
 import json
 import logging
 import numpy as np
+import os
 import tensorflow as tf
 
 import qanet.model as qanet_model
@@ -20,6 +21,7 @@ import qanet.model as qanet_model
 from qanet.model_utils import create_iterator, get_training_session_run_hooks
 from qanet.model_utils import load_data, load_embedding, load_hparams
 from qanet.model_utils import monitored_session
+from qanet.preprocess import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +32,9 @@ tf.logging.set_verbosity(tf.logging.INFO)
 @click.option('--hparams', type=click.Path(exists=True), default=None)
 @click.option('--save-path', type=click.Path(exists=True))
 def main(data, hparams, save_path):
-    # TODO get char_vocab_size from Preprocessor
-    hparams = load_hparams(save_path, hparams)
+    processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
+    hparams = load_hparams(
+        save_path, hparams_path=hparams, preprocessor=processor)
 
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))

@@ -11,7 +11,7 @@ from .data_utils import create_transposed_data
 
 logger = logging.getLogger(__name__)
 
-def load_hparams(save_path, hparams_path=None):
+def load_hparams(save_path, preprocessor=None, hparams_path=None):
     """ハイパーパラメータを読みこんで返す
     save_path配下にファイルが存在する場合、これを読み出す
     save_path配下にファイルが存在しない場合、
@@ -29,6 +29,7 @@ def load_hparams(save_path, hparams_path=None):
 
     with open(saved_path, 'wt') as fw, open(hparams_path, 'rt') as fr:
         hparams = tf.contrib.training.HParams(**json.load(fr))
+        hparams.add_hparam('char_vocab_size', len(preprocessor.char_dict))
         fw.write(hparams.to_json())
 
     return hparams
