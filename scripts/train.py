@@ -10,6 +10,7 @@
 """
 
 import click
+import functools
 import json
 import logging
 import numpy as np
@@ -17,7 +18,9 @@ import os
 import tensorflow as tf
 
 import qanet.model as qanet_model
+import qanet.data_utils as data_util
 
+from qanet.data_utils import PaddedInput
 from qanet.model_utils import create_iterator, get_training_session_run_hooks
 from qanet.model_utils import load_data, load_embedding, load_hparams
 from qanet.model_utils import monitored_session
@@ -42,10 +45,11 @@ def main(data, hparams, save_path):
     logger.info('Loading data...')
 
     train_data, dev_data = load_data(data)
+    _, _, train_iterator, train_feed_dict = create_iterator(
+        train_data, hparams, do_sort=True, repeat_count=hparams.epochs)
+    _, _, dev_iterator, dev_feed_dict = create_iterator(
+        dev_data, hparams, do_sort=False, repeat_count=-1)
     embedding = load_embedding(data)
-
-    _, _, train_iterator = create_iterator(train_data, hparams, True)
-    _, _, dev_iterator = create_iterator(dev_data, hparams, False)
 
     logger.info('Preparing model...')
 
@@ -85,8 +89,11 @@ def main(data, hparams, save_path):
         save_path, train_loss, dev_loss, scaffold, steps_per_epoch)
 
     with monitored_session(save_path, scaffold, hooks=hooks) as sess:
+        sess.run([train_iterator.initializer, dev_iterator.initializer],
+                 feed_dict={**train_feed_dict, **dev_feed_dict})
+
         while not sess.should_stop():
-            sess.run([merged, train_op])
+            sess.run([train_op, merged])
 
 if __name__ == '__main__':
     main()

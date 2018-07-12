@@ -68,7 +68,9 @@ def get_answer_spane(start_preds, end_preds):
 
     return best_span[0], best_span[1], best_score
 
-def create_iterator(data, hparams, do_sort, repeat=True):
+def create_iterator(data, hparams, do_sort, repeat_count=None):
+    """dataからtf.data.Iteratorと初期化に必要なfeed_dictを作って返す"""
+
     id, title, inputs, labels = create_transposed_data(
         data,
         do_sort=do_sort,
@@ -76,13 +78,28 @@ def create_iterator(data, hparams, do_sort, repeat=True):
         max_question_length=hparams.max_question_length,
         max_word_length=hparams.max_word_length)
 
-    dataset = tf.data.Dataset.from_tensor_slices((inputs, labels))
+    # Create iterator.
+    input_placeholders = inputs._replace(**dict(
+        (k, tf.placeholder(d.dtype, d.shape))
+        for k, d in zip(inputs._fields, inputs)))
+    label_placeholders = tuple(
+        tf.placeholder(d.dtype, d.shape) for d in labels)
+
+    dataset = tf.data.Dataset.from_tensor_slices(
+        (input_placeholders, label_placeholders))
     dataset = dataset.batch(hparams.batch_size)
 
-    if repeat:
-        dataset = dataset.repeat(hparams.epochs)
+    if repeat_count is not None:
+        dataset = dataset.repeat(repeat_count)
 
-    return id, title, dataset.make_one_shot_iterator()
+    iterator = dataset.make_initializable_iterator()
+
+    # Create feed_dict.
+    feed_dict = dict((p, d) for p, d in zip(
+        input_placeholders + label_placeholders,
+        inputs + labels))
+
+    return id, title, iterator, feed_dict
 
 @contextlib.contextmanager
 def monitored_session(save_path, scaffold, hooks=[]):
@@ -103,8 +120,8 @@ def get_training_session_run_hooks(
         scaffold,
         steps_per_epoch,
         log_steps=10,
-        save_steps=100,
-        summary_steps=1056//32):
+        save_steps=600,
+        summary_steps=100):
     nan_hook = tf.train.NanTensorHook(train_loss)
     checkpoint_hook = tf.train.CheckpointSaverHook(
         save_path,
