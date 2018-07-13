@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-from .core import ExpandDims, Squeeze
-
 class MultipleSeparableConv1D(tf.keras.models.Model):
     def __init__(self,
                  num_layers,
@@ -12,8 +10,6 @@ class MultipleSeparableConv1D(tf.keras.models.Model):
                  **kwargs):
         super(MultipleSeparableConv1D, self).__init__(**kwargs)
 
-        self.input_reshape = ExpandDims(1)
-
         for l in range(num_layers):
             layer = tf.keras.layers.SeparableConv2D(
                 filters=filters,
@@ -22,18 +18,16 @@ class MultipleSeparableConv1D(tf.keras.models.Model):
                 activation=activation)
             setattr(self, 'conv_{}'.format(l), layer)
 
-        self.output_reshape = Squeeze(1)
-
     def call(self, x):
         # (batch_size, 1, N, input_dim)
-        x = self.input_reshape(x)
+        x = tf.expand_dims(x, axis=1)
 
         for layer in self.layers[1:-1]:
             # (batch_size, 1, N, out_dim)
             x = layer(x)
 
         # (batch_size, N, out_dim)
-        return self.output_reshape(x)
+        return tf.squeeze(x, axis=1)
 
     def compute_output_shape(self, input_shape):
         return input_shape

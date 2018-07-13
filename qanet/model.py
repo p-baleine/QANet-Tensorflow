@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from .layers.attention import SimilarityMaxtirx
 from .layers.attention import ContextQueryAttention, QueryContextAttention
-from .layers.core import HighwayNetwork, PositionPrediction, ExpandDims
+from .layers.core import HighwayNetwork, PositionPrediction
 from .layers.embeddings import WordEmbedding, CharacterEmbedding
 from .layers.encoder import Encoder
 

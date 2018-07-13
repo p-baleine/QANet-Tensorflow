@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from .attention import MultiHeadAttention
 from .convolutional import MultipleSeparableConv1D
-from .core import PositionEncoding, ExpandDims, Squeeze
+from .core import PositionEncoding
 from .wrappers import ResidualNormed
 
 class Encoder(tf.keras.models.Model):
