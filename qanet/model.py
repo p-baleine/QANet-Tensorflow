@@ -32,9 +32,9 @@ class QANet(tf.keras.Model):
         # the input of this layer is a vector of dimension
         # p1 + p2 = 500 for each individual word, which is immediately
         # mapped to d = 128 by a one-dimensional convolution.
-        self.projection = tf.keras.layers.Conv2D(
+        self.embedding_encoder_projection = tf.keras.layers.Conv2D(
             filters=hparams.dim,
-            kernel_size=(1, hparams.embedding_encoder_filter_size),
+            kernel_size=(1, 1),
             padding='same',
             activation='relu')
 
@@ -49,12 +49,18 @@ class QANet(tf.keras.Model):
         self.context_query_attention = ContextQueryAttention()
         self.query_context_attention = QueryContextAttention()
 
+        self.model_encoder_projection = tf.keras.layers.Conv2D(
+            filters=hparams.dim,
+            kernel_size=(1, 1),
+            padding='same',
+            activation='relu')
+
         # Model encoders
         self.model_encoders = []
 
         for block in range(hparams.model_encoder_num_blocks):
             e = Encoder(
-                dim=hparams.dim * 4,
+                dim=hparams.dim,
                 filter_size=hparams.model_encoder_filter_size,
                 num_conv_layers=hparams.model_encoder_num_conv_layers,
                 num_heads=hparams.model_encoder_num_heads,
@@ -110,9 +116,9 @@ class QANet(tf.keras.Model):
         # (batch_size, 1, M, input_dim)
         question = tf.expand_dims(question, axis=1)
         # (batch_size, 1, N, out_dim)
-        context = self.projection(context)
+        context = self.embedding_encoder_projection(context)
         # (batch_size, 1, M, out_dim)
-        question = self.projection(question)
+        question = self.embedding_encoder_projection(question)
         # (batch_size, N, out_dim)
         context = tf.reshape(context, [-1, self.N, self.dim])
         # (batch_size, M, out_dim)
@@ -133,7 +139,9 @@ class QANet(tf.keras.Model):
             (context, question, in_context_mask, in_question_mask))
         S_r = tf.nn.softmax(S, 2)
         S_c = tf.nn.softmax(S, 1)
+        # (batch_size, N, dim)
         A = self.context_query_attention((S_r, question))
+        # (batch_size, N, dim)
         B = self.query_context_attention((S_r, S_c, context))
 
         if training:
@@ -142,12 +150,20 @@ class QANet(tf.keras.Model):
 
         # Model Encoder Layer.
 
+        # (batch_size, N, dim * 4)
         x = tf.concat([
             context,
             A,
             context * A,
             context * B
         ], axis=2)
+
+        # (batch_size, 1, N, dim * 4)
+        x = tf.expand_dims(x, axis=1)
+        # (batch_size, 1, N, dim)
+        x = self.model_encoder_projection(x)
+        # (batch_size, N, dim)
+        x = tf.reshape(x, [-1, self.N, self.dim])
 
         M_0 = self._multiple_encoder_block(x, training=training)
         M_1 = self._multiple_encoder_block(M_0, training=training)
@@ -168,7 +184,7 @@ class QANet(tf.keras.Model):
     def _multiple_encoder_block(self, x, training):
         # TODO Currentry only 2 gpus are assumed.
         for idx, encoder in enumerate(self.model_encoders):
-            device = 0 if idx < 2 else 1
+            device = 0 if idx < 3 else 1
             with tf.device('/gpu:{}'.format(device)):
                 x = encoder(x, training=training)
         return x

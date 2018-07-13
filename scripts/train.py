@@ -57,7 +57,7 @@ def main(data, hparams, save_path):
     dev_inputs, dev_labels = dev_iterator.get_next()
 
     model = qanet_model.QANet(embedding, hparams)
-    optimizer = tf.train.RMSPropOptimizer(
+    optimizer = tf.train.AdamOptimizer(
         learning_rate=hparams.learning_rate)
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
