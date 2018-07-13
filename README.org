@@ -66,4 +66,5 @@ make evaluate
 
 ** TODOs
 
-- Dropout
+- learning rate warm-up
+- EMA
