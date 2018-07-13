@@ -39,6 +39,7 @@ class Highway(tf.keras.layers.Layer):
 class HighwayNetwork(tf.keras.models.Model):
     def __init__(self, num_layers, **kwargs):
         super(HighwayNetwork, self).__init__(**kwargs)
+
         for l in range(num_layers):
             setattr(self, 'highway_{}'.format(l), Highway())
 
@@ -97,22 +98,3 @@ class PositionPrediction(tf.keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         M_a_shape, _, _ = input_shape
         return tf.TensorShape([M_a_shape[0], M_a.shape[1]])
-
-class ExpandDims(tf.keras.layers.Lambda):
-    def __init__(self, axis, **kwargs):
-        super(ExpandDims, self).__init__(
-            function=lambda x: tf.expand_dims(x, axis),
-            **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        # TODO 間違ってね？ってか間違ってても怒られないの？
-        return input_shape
-
-class Squeeze(tf.keras.layers.Lambda):
-    def __init__(self, axis, **kwargs):
-        super(Squeeze, self).__init__(
-            function=lambda x: tf.squeeze(x, axis),
-            **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        return input_shape

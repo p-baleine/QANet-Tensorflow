@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from .layers.attention import SimilarityMaxtirx
 from .layers.attention import ContextQueryAttention, QueryContextAttention
-from .layers.core import HighwayNetwork, PositionPrediction, ExpandDims
+from .layers.core import HighwayNetwork, PositionPrediction
 from .layers.embeddings import WordEmbedding, CharacterEmbedding
 from .layers.encoder import Encoder
 
@@ -14,6 +14,9 @@ class QANet(tf.keras.Model):
         self.dim = hparams.dim
         self.N = hparams.max_context_length
         self.M = hparams.max_question_length
+        self.word_dropout_rate = hparams.word_dropout_rate
+        self.char_dropout_rate = hparams.char_dropout_rate
+        self.dropout_rate = hparams.dropout_rate
         self.num_gpus = hparams.num_gpus
 
         self.word_embedding = WordEmbedding(embedding_matrix)
@@ -39,7 +42,8 @@ class QANet(tf.keras.Model):
             dim=hparams.dim,
             filter_size=hparams.embedding_encoder_filter_size,
             num_conv_layers=hparams.embedding_encoder_num_conv_layers,
-            num_heads=hparams.embedding_encoder_num_heads)
+            num_heads=hparams.embedding_encoder_num_heads,
+            layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
 
         self.similarity_matrix = SimilarityMaxtirx()
         self.context_query_attention = ContextQueryAttention()
@@ -53,7 +57,8 @@ class QANet(tf.keras.Model):
                 dim=hparams.dim * 4,
                 filter_size=hparams.model_encoder_filter_size,
                 num_conv_layers=hparams.model_encoder_num_conv_layers,
-                num_heads=hparams.model_encoder_num_heads)
+                num_heads=hparams.model_encoder_num_heads,
+                layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
             self.model_encoders.append(e)
             # make keras.Model classes to track all the variables in
             # a list of Layer objects.
@@ -74,14 +79,29 @@ class QANet(tf.keras.Model):
         context_emb = self.word_embedding((in_context, in_context_unk_label))
         question_emb = self.word_embedding((in_question, in_question_unk_label))
 
+        if training:
+            keep_prob = 1.0 - self.word_dropout_rate
+            context_emb = tf.nn.dropout(context_emb, keep_prob)
+            question_emb = tf.nn.dropout(question_emb, keep_prob)
+
         context_char_emb = self.char_embedding(in_context_chars)
         question_char_emb = self.char_embedding(in_question_chars)
+
+        if training:
+            keep_prob = 1.0 - self.char_dropout_rate
+            context_char_emb = tf.nn.dropout(context_char_emb, keep_prob)
+            question_char_emb = tf.nn.dropout(question_char_emb, keep_prob)
 
         context = tf.concat([context_emb, context_char_emb], axis=2)
         question = tf.concat([question_emb, question_char_emb], axis=2)
 
         context = self.context_highway(context)
         question = self.question_highway(question)
+
+        if training:
+            keep_prob = 1.0 - self.dropout_rate
+            context = tf.nn.dropout(context, keep_prob)
+            question = tf.nn.dropout(question, keep_prob)
 
         # Embedding Encoder Layer.
 
@@ -98,9 +118,14 @@ class QANet(tf.keras.Model):
         # (batch_size, M, out_dim)
         question = tf.reshape(question, [-1, self.M, self.dim])
         # (batch_size, N, out_dim)
-        context = self.embedding_encoder(context)
+        context = self.embedding_encoder(context, training=training)
         # (batch_size, M, out_dim)
-        question = self.embedding_encoder(question)
+        question = self.embedding_encoder(question, training=training)
+
+        if training:
+            keep_prob = 1.0 - self.dropout_rate
+            context = tf.nn.dropout(context, keep_prob)
+            question = tf.nn.dropout(question, keep_prob)
 
         # Context-Query Attention Layer.
 
@@ -111,6 +136,10 @@ class QANet(tf.keras.Model):
         A = self.context_query_attention((S_r, question))
         B = self.query_context_attention((S_r, S_c, context))
 
+        if training:
+            A = tf.nn.dropout(A, 1.0 - self.dropout_rate)
+            B = tf.nn.dropout(B, 1.0 - self.dropout_rate)
+
         # Model Encoder Layer.
 
         x = tf.concat([
@@ -120,9 +149,14 @@ class QANet(tf.keras.Model):
             context * B
         ], axis=2)
 
-        M_0 = self._multiple_encoder_block(x)
-        M_1 = self._multiple_encoder_block(M_0)
-        M_2 = self._multiple_encoder_block(M_1)
+        M_0 = self._multiple_encoder_block(x, training=training)
+        M_1 = self._multiple_encoder_block(M_0, training=training)
+        M_2 = self._multiple_encoder_block(M_1, training=training)
+
+        if training:
+            M_0 = tf.nn.dropout(M_0, 1.0 - self.dropout_rate)
+            M_1 = tf.nn.dropout(M_1, 1.0 - self.dropout_rate)
+            M_2 = tf.nn.dropout(M_2, 1.0 - self.dropout_rate)
 
         # Output layer.
 
@@ -131,12 +165,12 @@ class QANet(tf.keras.Model):
 
         return [p_1, p_2]
 
-    def _multiple_encoder_block(self, x):
+    def _multiple_encoder_block(self, x, training):
         # TODO Currentry only 2 gpus are assumed.
         for idx, encoder in enumerate(self.model_encoders):
-            device = 0 if idx < 3 else 1
+            device = 0 if idx < 2 else 1
             with tf.device('/gpu:{}'.format(device)):
-                x = encoder(x)
+                x = encoder(x, training=training)
         return x
 
 def loss_fn(model, inputs, targets, training):
