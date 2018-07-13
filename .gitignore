@@ -6,8 +6,8 @@ hparams/*
 word2vec/*
 notebooks/memo/*
 
-notebooks/logs/*/events.out.tfevents.*
-notebooks/logs/*/weights.*
+notebooks/old/logs/*/events.out.tfevents.*
+notebooks/old/logs/*/weights.*
 
 !hparams/default.json
 !.gitkeep
