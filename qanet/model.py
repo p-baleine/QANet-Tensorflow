@@ -14,6 +14,9 @@ class QANet(tf.keras.Model):
         self.dim = hparams.dim
         self.N = hparams.max_context_length
         self.M = hparams.max_question_length
+        self.word_dropout_rate = hparams.word_dropout_rate
+        self.char_dropout_rate = hparams.char_dropout_rate
+        self.dropout_rate = hparams.dropout_rate
         self.num_gpus = hparams.num_gpus
 
         self.word_embedding = WordEmbedding(embedding_matrix)
@@ -74,14 +77,29 @@ class QANet(tf.keras.Model):
         context_emb = self.word_embedding((in_context, in_context_unk_label))
         question_emb = self.word_embedding((in_question, in_question_unk_label))
 
+        if training:
+            keep_prob = 1.0 - self.word_dropout_rate
+            context_emb = tf.nn.dropout(context_emb, keep_prob)
+            question_emb = tf.nn.dropout(question_emb, keep_prob)
+
         context_char_emb = self.char_embedding(in_context_chars)
         question_char_emb = self.char_embedding(in_question_chars)
+
+        if training:
+            keep_prob = 1.0 - self.char_dropout_rate
+            context_char_emb = tf.nn.dropout(context_char_emb, keep_prob)
+            question_char_emb = tf.nn.dropout(question_char_emb, keep_prob)
 
         context = tf.concat([context_emb, context_char_emb], axis=2)
         question = tf.concat([question_emb, question_char_emb], axis=2)
 
         context = self.context_highway(context)
         question = self.question_highway(question)
+
+        if training:
+            keep_prob = 1.0 - self.dropout_rate
+            context = tf.nn.dropout(context, keep_prob)
+            question = tf.nn.dropout(question, keep_prob)
 
         # Embedding Encoder Layer.
 
@@ -102,6 +120,11 @@ class QANet(tf.keras.Model):
         # (batch_size, M, out_dim)
         question = self.embedding_encoder(question)
 
+        if training:
+            keep_prob = 1.0 - self.dropout_rate
+            context = tf.nn.dropout(context, keep_prob)
+            question = tf.nn.dropout(question, keep_prob)
+
         # Context-Query Attention Layer.
 
         S = self.similarity_matrix(
@@ -110,6 +133,10 @@ class QANet(tf.keras.Model):
         S_c = tf.nn.softmax(S, 1)
         A = self.context_query_attention((S_r, question))
         B = self.query_context_attention((S_r, S_c, context))
+
+        if training:
+            A = tf.nn.dropout(A, 1.0 - self.dropout_rate)
+            B = tf.nn.dropout(B, 1.0 - self.dropout_rate)
 
         # Model Encoder Layer.
 
@@ -123,6 +150,11 @@ class QANet(tf.keras.Model):
         M_0 = self._multiple_encoder_block(x)
         M_1 = self._multiple_encoder_block(M_0)
         M_2 = self._multiple_encoder_block(M_1)
+
+        if training:
+            M_0 = tf.nn.dropout(M_0, 1.0 - self.dropout_rate)
+            M_1 = tf.nn.dropout(M_1, 1.0 - self.dropout_rate)
+            M_2 = tf.nn.dropout(M_2, 1.0 - self.dropout_rate)
 
         # Output layer.
 

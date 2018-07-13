@@ -18,5 +18,8 @@
   "model_encoder_num_conv_layers": 2,
   "model_encoder_num_blocks": 7,
   "model_encoder_num_heads": 1,
+  "dropout_rate": 0.05,
+  "char_dropout_rate": 0.1,
+  "word_dropout_rate": 0.1,
   "num_gpus": 2
 }
