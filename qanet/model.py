@@ -42,7 +42,8 @@ class QANet(tf.keras.Model):
             dim=hparams.dim,
             filter_size=hparams.embedding_encoder_filter_size,
             num_conv_layers=hparams.embedding_encoder_num_conv_layers,
-            num_heads=hparams.embedding_encoder_num_heads)
+            num_heads=hparams.embedding_encoder_num_heads,
+            layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
 
         self.similarity_matrix = SimilarityMaxtirx()
         self.context_query_attention = ContextQueryAttention()
@@ -56,7 +57,8 @@ class QANet(tf.keras.Model):
                 dim=hparams.dim * 4,
                 filter_size=hparams.model_encoder_filter_size,
                 num_conv_layers=hparams.model_encoder_num_conv_layers,
-                num_heads=hparams.model_encoder_num_heads)
+                num_heads=hparams.model_encoder_num_heads,
+                layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
             self.model_encoders.append(e)
             # make keras.Model classes to track all the variables in
             # a list of Layer objects.
@@ -116,9 +118,9 @@ class QANet(tf.keras.Model):
         # (batch_size, M, out_dim)
         question = tf.reshape(question, [-1, self.M, self.dim])
         # (batch_size, N, out_dim)
-        context = self.embedding_encoder(context)
+        context = self.embedding_encoder(context, training=training)
         # (batch_size, M, out_dim)
-        question = self.embedding_encoder(question)
+        question = self.embedding_encoder(question, training=training)
 
         if training:
             keep_prob = 1.0 - self.dropout_rate
@@ -147,9 +149,9 @@ class QANet(tf.keras.Model):
             context * B
         ], axis=2)
 
-        M_0 = self._multiple_encoder_block(x)
-        M_1 = self._multiple_encoder_block(M_0)
-        M_2 = self._multiple_encoder_block(M_1)
+        M_0 = self._multiple_encoder_block(x, training=training)
+        M_1 = self._multiple_encoder_block(M_0, training=training)
+        M_2 = self._multiple_encoder_block(M_1, training=training)
 
         if training:
             M_0 = tf.nn.dropout(M_0, 1.0 - self.dropout_rate)
@@ -163,12 +165,12 @@ class QANet(tf.keras.Model):
 
         return [p_1, p_2]
 
-    def _multiple_encoder_block(self, x):
+    def _multiple_encoder_block(self, x, training):
         # TODO Currentry only 2 gpus are assumed.
         for idx, encoder in enumerate(self.model_encoders):
-            device = 0 if idx < 3 else 1
+            device = 0 if idx < 2 else 1
             with tf.device('/gpu:{}'.format(device)):
-                x = encoder(x)
+                x = encoder(x, training=training)
         return x
 
 def loss_fn(model, inputs, targets, training):

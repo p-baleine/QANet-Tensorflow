@@ -21,5 +21,6 @@
   "dropout_rate": 0.05,
   "char_dropout_rate": 0.1,
   "word_dropout_rate": 0.1,
+  "layer_dropout_survival_prob": 0.9,
   "num_gpus": 2
 }
