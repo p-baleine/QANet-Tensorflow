@@ -124,9 +124,11 @@ class QANet(tf.keras.Model):
         # (batch_size, M, out_dim)
         question = tf.reshape(question, [-1, self.M, self.dim])
         # (batch_size, N, out_dim)
-        context = self.embedding_encoder(context, training=training)
+        context = self.embedding_encoder(
+            (context, in_context_mask), training=training)
         # (batch_size, M, out_dim)
-        question = self.embedding_encoder(question, training=training)
+        question = self.embedding_encoder(
+            (question, in_question_mask), training=training)
 
         if training:
             keep_prob = 1.0 - self.dropout_rate
@@ -165,9 +167,12 @@ class QANet(tf.keras.Model):
         # (batch_size, N, dim)
         x = tf.reshape(x, [-1, self.N, self.dim])
 
-        M_0 = self._multiple_encoder_block(x, training=training)
-        M_1 = self._multiple_encoder_block(M_0, training=training)
-        M_2 = self._multiple_encoder_block(M_1, training=training)
+        M_0 = self._multiple_encoder_block(
+            x, in_context_mask, training=training)
+        M_1 = self._multiple_encoder_block(
+            M_0, in_context_mask, training=training)
+        M_2 = self._multiple_encoder_block(
+            M_1, in_context_mask, training=training)
 
         if training:
             M_0 = tf.nn.dropout(M_0, 1.0 - self.dropout_rate)
@@ -181,12 +186,12 @@ class QANet(tf.keras.Model):
 
         return [p_1, p_2]
 
-    def _multiple_encoder_block(self, x, training):
+    def _multiple_encoder_block(self, x, mask, training):
         # TODO Currentry only 2 gpus are assumed.
         for idx, encoder in enumerate(self.model_encoders):
             device = 0 if idx < 3 else 1
             with tf.device('/gpu:{}'.format(device)):
-                x = encoder(x, training=training)
+                x = encoder((x, mask), training=training)
         return x
 
 def loss_fn(model, inputs, targets, training):

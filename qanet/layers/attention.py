@@ -42,41 +42,41 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     def build(self, input_shape):
         self._W_Q = self.add_variable(
             'W_Q',
-            [self._input_dim, self._num_heads * self._d_k],
+            [self._input_dim, self._d_k],
             initializer=self._q_initializer)
         self._W_K = self.add_variable(
             'W_K',
-            [self._input_dim, self._num_heads * self._d_k],
+            [self._input_dim, self._d_k],
             initializer=self._k_initializer)
         self._W_V = self.add_variable(
             'W_V',
-            [self._input_dim, self._num_heads * self._d_v],
+            [self._input_dim, self._d_v],
             initializer=self._v_initializer)
         self._W_O = self.add_variable(
             'W_O',
-            [self._num_heads * self._d_v, self._input_dim],
+            [self._d_v, self._input_dim],
             initializer=self._o_initializer)
 
         return super(MultiHeadAttention, self).build(input_shape)
 
     def call(self, x):
         # (batch_size, length, input_dim)
-        q, k, v = x
+        q, k, v, mask = x
 
-        # (batch_size, length, num_heads * d_k)
+        # (batch_size, length, d_k)
         q_W_Q = tf.tensordot(q, self._W_Q, [[2], [0]])
         k_W_K = tf.tensordot(k, self._W_K, [[2], [0]])
-        # (batch_size, length, num_heads * d_v)
+        # (batch_size, length, d_v)
         v_W_V = tf.tensordot(v, self._W_V, [[2], [0]])
-        # (batch_size, num_heads, length, d_k)
+        # (batch_size, num_heads, length, d_k / num_heads)
         q_W_Q = split_heads(q_W_Q, self._num_heads)
         k_W_K = split_heads(k_W_K, self._num_heads)
-        # (batch_size, num_heads, length, d_v)
+        # (batch_size, num_heads, length, d_v / num_heads)
         v_W_V = split_heads(v_W_V, self._num_heads)
 
-        # (batch_size, num_heads, length, d_v)
-        x = dot_product_attention(q_W_Q, k_W_K, v_W_V)
-        # (batch_size, length, num_heads * d_v)
+        # (batch_size, num_heads, length, d_v / num_heads)
+        x = dot_product_attention(q_W_Q, k_W_K, v_W_V, mask)
+        # (batch_size, length, d_v)
         x = combine_heads(x)
         # (batch_size, length, input_dim)
         return tf.tensordot(x, self._W_O, [[2], [0]])
@@ -190,10 +190,11 @@ class QueryContextAttention(tf.keras.layers.Lambda):
         N = input_shape[0][1]
         return tf.TensorShape([input_shape[0][0], N, d])
 
-def dot_product_attention(Q, K, V):
+def dot_product_attention(Q, K, V, mask):
     d_k = tf.cast(K.shape[-1], tf.float32)
-    return tf.matmul(tf.nn.softmax(
-        tf.matmul(Q, K, transpose_b=True) / tf.sqrt(d_k)), V)
+    QK = tf.matmul(Q, K, transpose_b=True)
+    mask = tf.reshape(mask, [-1, 1, 1, QK.shape[-1]])
+    return tf.matmul(tf.nn.softmax(exp_mask(QK, mask) / tf.sqrt(d_k)), V)
 
 def split_heads(x, num_heads):
     """xの最後の次元をnum_headsに分ける
