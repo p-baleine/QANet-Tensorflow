@@ -25,9 +25,9 @@ class ResidualNormed(tf.keras.layers.Wrapper):
 
         super(ResidualNormed, self).build()
 
-    def call(self, input):
-        output = self.layer.call(input)
-        x = input[0] if type(input) is list else input
+    def call(self, inputs):
+        output = self.layer.call(inputs)
+        x = inputs[0] if type(inputs) is list else inputs
         mean = tf.reduce_mean(output, axis=[-1], keep_dims=True)
         variance = tf.reduce_mean(tf.square(output - mean), axis=[-1], keep_dims=True)
         norm_output = (output - mean) * tf.rsqrt(variance + self._epsilon)
@@ -45,16 +45,16 @@ class LayerDropped(tf.keras.layers.Wrapper):
         self.layer.build(input_shape)
         super(LayerDropped, self).build()
 
-    def call(self, input, training):
-        output = self.layer.call(input)
-        input = input[0] if type(input) is list else input
+    def call(self, inputs, training):
+        output = self.layer.call(inputs)
+        inputs = inputs[0] if type(inputs) is list else inputs
 
         if not training:
             return output
 
         is_decayed = tf.random_uniform([]) < (1.0 - self._survival_prob)
 
-        return tf.cond(is_decayed, lambda: input, lambda: output)
+        return tf.cond(is_decayed, lambda: inputs, lambda: output)
 
     def compute_output_shape(self, input_shape):
         return input_shape

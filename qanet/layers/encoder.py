@@ -76,7 +76,9 @@ class Encoder(tf.keras.models.Model):
             num_total_layers=num_total_layers,
             p_L=layer_dropout_survival_prob)
 
-    def call(self, x, training):
+    def call(self, inputs, training):
+        x, mask = inputs
+
         # (batch_size, N, input_dim)
         x = self.position_encoding(x)
 
@@ -91,7 +93,7 @@ class Encoder(tf.keras.models.Model):
         x = tf.squeeze(x, axis=1)
 
         # (batch_size, N, dim)
-        x = self.attention([x] * 3, training=training)
+        x = self.attention([x] * 3 + [mask], training=training)
 
         # (batch_size, N, dim)
         x = self.feed_forward(x, training=training)
