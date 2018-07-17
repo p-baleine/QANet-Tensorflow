@@ -3,6 +3,7 @@
   "epochs": 100,
   "learning_rate": 0.001,
   "l2_regularizer_scale": 3e-7,
+  "warmup_steps": 1000,
   "max_context_length": 400,
   "max_question_length": 30,
   "max_word_length": 16,
