@@ -57,14 +57,19 @@ def main(data, hparams, save_path):
     dev_inputs, dev_labels = dev_iterator.get_next()
 
     model = qanet_model.QANet(embedding, hparams)
-    optimizer = tf.train.AdamOptimizer(
-        learning_rate=hparams.learning_rate)
+    global_step = tf.train.get_or_create_global_step()
+
+    # learning rate warm-up scheme
+    learning_rate = tf.minimum(
+        hparams.learning_rate,
+        0.001 / tf.log(tf.cast(hparams.warmup_steps - 1, tf.float32))
+        * tf.log(tf.cast(global_step, tf.float32) + 1))
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
     grads = optimizer.compute_gradients(
         train_loss, colocate_gradients_with_ops=True)
-    train_op = optimizer.apply_gradients(
-        grads, global_step=tf.train.get_or_create_global_step())
+    train_op = optimizer.apply_gradients(grads, global_step=global_step)
     train_acc = qanet_model.accuracy_fn(
         model, train_inputs, train_labels, hparams.batch_size, training=True)
 
@@ -79,6 +84,8 @@ def main(data, hparams, save_path):
     tf.summary.scalar('train_acc_p2', train_acc[1])
     tf.summary.scalar('dev_acc_p1', dev_acc[0])
     tf.summary.scalar('dev_acc_p2', dev_acc[1])
+    tf.summary.scalar('learning_rate', learning_rate)
+
     merged = tf.summary.merge_all()
 
     logger.info('Start training...')
