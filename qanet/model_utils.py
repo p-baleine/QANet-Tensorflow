@@ -68,12 +68,11 @@ def get_answer_spane(start_preds, end_preds):
 
     return best_span[0], best_span[1], best_score
 
-def create_iterator(data, hparams, do_sort, repeat_count=None):
+def create_iterator(data, hparams, do_shuffle, repeat_count=None):
     """dataからtf.data.Iteratorと初期化に必要なfeed_dictを作って返す"""
 
     id, title, inputs, labels = create_transposed_data(
         data,
-        do_sort=do_sort,
         max_context_length=hparams.max_context_length,
         max_question_length=hparams.max_question_length,
         max_word_length=hparams.max_word_length)
@@ -87,6 +86,10 @@ def create_iterator(data, hparams, do_sort, repeat_count=None):
 
     dataset = tf.data.Dataset.from_tensor_slices(
         (input_placeholders, label_placeholders))
+
+    if do_shuffle:
+        dataset = dataset.shuffle(buffer_size=10000)
+
     dataset = dataset.batch(hparams.batch_size)
 
     if repeat_count is not None:
@@ -119,9 +122,17 @@ def get_training_session_run_hooks(
         dev_loss,
         scaffold,
         steps_per_epoch,
+        train_iterator,
+        train_feed_dict,
+        dev_iterator,
+        dev_feed_dict,
         log_steps=10,
         save_steps=600,
         summary_steps=100):
+    train_iterator_init_hook = DatasetInitializerHook(
+        train_iterator, train_feed_dict)
+    dev_iterator_init_hook = DatasetInitializerHook(
+        dev_iterator, dev_feed_dict)
     nan_hook = tf.train.NanTensorHook(train_loss)
     checkpoint_hook = tf.train.CheckpointSaverHook(
         save_path,
@@ -143,6 +154,8 @@ def get_training_session_run_hooks(
     log_epoch_hook = LogEpochHook(steps_per_epoch)
 
     return [
+        train_iterator_init_hook,
+        dev_iterator_init_hook,
         nan_hook,
         checkpoint_hook,
         counter_hook,
@@ -177,3 +190,20 @@ class LogEpochHook(tf.train.SessionRunHook):
             logger.info('Epoch {} ({} sec)'.format(
                 global_step // self._steps_per_epoch,
                 elapsed_time))
+
+class DatasetInitializerHook(tf.train.SessionRunHook):
+    """Hook that initialize an iterator.
+
+    See: https://github.com/tensorflow/tensorflow/issues/12859#issuecomment-348251009
+    """
+
+    def __init__(self, iterator, feed_dict):
+        self._iterator = iterator
+        self._feed_dict = feed_dict
+
+    def begin(self):
+        self._initializer = self._iterator.initializer
+
+    def after_create_session(self, session, coord):
+        del coord
+        session.run(self._initializer, self._feed_dict)

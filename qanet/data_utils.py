@@ -23,8 +23,7 @@ def create_transposed_data(
         raw_data,
         max_context_length,
         max_question_length,
-        max_word_length,
-        do_sort):
+        max_word_length):
     """学習用に加工したデータを返す
 
     qanet.preprocess.TransformedOutput形式のdataを処理する
@@ -49,10 +48,6 @@ def create_transposed_data(
 
     logger.info('{} data filtered, total data size: {}'.format(
         len(raw_data) - len(valid_data), len(valid_data)))
-
-    if do_sort:
-        # batch the examples by length
-        valid_data = sorted(valid_data, key=lambda d: len(d.x.context))
 
     # `x`をパディング
     valid_data = [d._replace(
