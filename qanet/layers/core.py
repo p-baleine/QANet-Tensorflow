@@ -5,7 +5,8 @@ from tensor2tensor.layers.common_attention import add_timing_signal_1d
 from .layer_utils import exp_mask
 
 class Highway(tf.keras.layers.Layer):
-    def __init__(self, **kwargs):
+    def __init__(self, regularizer=None, **kwargs):
+        self._regularizer = regularizer
         super(Highway, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -14,19 +15,23 @@ class Highway(tf.keras.layers.Layer):
         self._W_T = self.add_variable(
             'weight_transform',
             [d, d],
-            initializer=tf.contrib.layers.xavier_initializer())
+            initializer=tf.contrib.layers.xavier_initializer(),
+            regularizer=self._regularizer)
         self._b_T = self.add_variable(
             'bias_transform',
             [d],
-            initializer=tf.zeros_initializer())
+            initializer=tf.zeros_initializer(),
+            regularizer=self._regularizer)
         self._W = self.add_variable(
             'weight',
             [d, d],
-            initializer=tf.contrib.layers.xavier_initializer())
+            initializer=tf.contrib.layers.xavier_initializer(),
+            regularizer=self._regularizer)
         self._b = self.add_variable(
             'bias',
             [d],
-            initializer=tf.zeros_initializer())
+            initializer=tf.zeros_initializer(),
+            regularizer=self._regularizer)
 
     def call(self, x):
         T = tf.sigmoid(tf.tensordot(x, self._W_T, [[2], [0]]) + self._b_T)
@@ -37,11 +42,15 @@ class Highway(tf.keras.layers.Layer):
         return input_shape
 
 class HighwayNetwork(tf.keras.models.Model):
-    def __init__(self, num_layers, **kwargs):
+    def __init__(self,
+                 num_layers,
+                 regularizer=None,
+                 **kwargs):
         super(HighwayNetwork, self).__init__(**kwargs)
 
         for l in range(num_layers):
-            setattr(self, 'highway_{}'.format(l), Highway())
+            setattr(self, 'highway_{}'.format(l),
+                    Highway(regularizer=regularizer))
 
     def call(self, x):
         y = x
@@ -71,8 +80,10 @@ class PositionPrediction(tf.keras.layers.Layer):
 
     def __init__(self,
                  initializer=tf.contrib.layers.xavier_initializer(),
+                 regularizer=None,
                  **kwargs):
         self._initializer = initializer
+        self._regularizer = regularizer
         super(PositionPrediction, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -81,7 +92,8 @@ class PositionPrediction(tf.keras.layers.Layer):
         self._W = self.add_variable(
             'weight',
             [M_a_shape[-1] + M_b_shape[-1], 1],
-            initializer=self._initializer)
+            initializer=self._initializer,
+            regularizer=self._regularizer)
 
         super(PositionPrediction, self).build(input_shape)
 

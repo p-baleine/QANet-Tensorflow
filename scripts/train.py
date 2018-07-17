@@ -61,6 +61,13 @@ def main(data, hparams, save_path):
         learning_rate=hparams.learning_rate)
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
+
+    if hparams.l2_regularizer_scale is not None:
+        variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        l2_loss = tf.contrib.layers.apply_regularization(
+            model.regularizer, variables)
+        train_loss += l2_loss
+
     grads = optimizer.compute_gradients(
         train_loss, colocate_gradients_with_ops=True)
     train_op = optimizer.apply_gradients(

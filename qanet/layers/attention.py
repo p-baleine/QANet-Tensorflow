@@ -28,6 +28,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                  k_initializer=tf.contrib.layers.xavier_initializer(),
                  v_initializer=tf.contrib.layers.xavier_initializer(),
                  o_initializer=tf.contrib.layers.xavier_initializer(),
+                 regularizer=None,
                  **kwargs):
         self._num_heads = num_heads
         self._input_dim = input_dim
@@ -37,25 +38,30 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._k_initializer = k_initializer
         self._v_initializer = v_initializer
         self._o_initializer = o_initializer
+        self._regularizer = regularizer
         super(MultiHeadAttention, self).__init__(**kwargs)
 
     def build(self, input_shape):
         self._W_Q = self.add_variable(
             'W_Q',
             [self._input_dim, self._d_k],
-            initializer=self._q_initializer)
+            initializer=self._q_initializer,
+            regularizer=self._regularizer)
         self._W_K = self.add_variable(
             'W_K',
             [self._input_dim, self._d_k],
-            initializer=self._k_initializer)
+            initializer=self._k_initializer,
+            regularizer=self._regularizer)
         self._W_V = self.add_variable(
             'W_V',
             [self._input_dim, self._d_v],
-            initializer=self._v_initializer)
+            initializer=self._v_initializer,
+            regularizer=self._regularizer)
         self._W_O = self.add_variable(
             'W_O',
             [self._d_v, self._input_dim],
-            initializer=self._o_initializer)
+            initializer=self._o_initializer,
+            regularizer=self._regularizer)
 
         return super(MultiHeadAttention, self).build(input_shape)
 
@@ -98,8 +104,10 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
 
     def __init__(self,
                  initializer=tf.contrib.layers.xavier_initializer(),
+                 regularizer=None,
                  **kwargs):
         self._initializer = initializer
+        self._regularizer = regularizer
         super(SimilarityMaxtirx, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -108,7 +116,8 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         self._W = self.add_variable(
             'weight',
             [c_shape[-1] * 3, 1],
-            initializer=self._initializer)
+            initializer=self._initializer,
+            regularizer=self._regularizer)
 
         super(SimilarityMaxtirx, self).build(input_shape)
 

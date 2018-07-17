@@ -24,6 +24,9 @@ class Encoder(tf.keras.models.Model):
                  num_conv_layers,
                  num_heads,
                  layer_dropout_survival_prob,
+                 conv_regularizer=None,
+                 attention_regularizer=None,
+                 ff_regularizer=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
 
@@ -44,7 +47,12 @@ class Encoder(tf.keras.models.Model):
                         filters=dim,
                         kernel_size=(1, filter_size),
                         padding='same',
-                        activation='relu')),
+                        activation='relu',
+                        depthwise_regularizer=conv_regularizer,
+                        pointwise_regularizer=conv_regularizer,
+                        bias_regularizer=conv_regularizer,
+                        activity_regularizer=conv_regularizer),
+                    regularizer=conv_regularizer),
                 layer_idx=layer_idx,
                 num_total_layers=num_total_layers,
                 p_L=layer_dropout_survival_prob)
@@ -59,7 +67,9 @@ class Encoder(tf.keras.models.Model):
                     num_heads=num_heads,
                     input_dim=dim,
                     d_k=dim,
-                    d_v=dim)),
+                    d_v=dim,
+                    regularizer=attention_regularizer),
+                regularizer=attention_regularizer),
             layer_idx=layer_idx,
             num_total_layers=num_total_layers,
             p_L=layer_dropout_survival_prob)
@@ -71,7 +81,11 @@ class Encoder(tf.keras.models.Model):
             ResidualNormed(
                 tf.keras.layers.Dense(
                     dim,
-                    activation='relu')),
+                    activation='relu',
+                    kernel_regularizer=ff_regularizer,
+                    bias_regularizer=ff_regularizer,
+                    activity_regularizer=ff_regularizer),
+                regularizer=ff_regularizer),
             layer_idx=layer_idx,
             num_total_layers=num_total_layers,
             p_L=layer_dropout_survival_prob)
