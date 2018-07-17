@@ -62,9 +62,3 @@ make train
 #+BEGIN_SRC bash
 make evaluate
 #+END_SRC
-
-
-** TODOs
-
-- learning rate warm-up
-- EMA

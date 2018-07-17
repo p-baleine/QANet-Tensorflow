@@ -96,7 +96,6 @@ class QANet(tf.keras.Model):
             regularizer=self._regularizer)
 
     def call(self, inputs, training):
-        # TODO trainingで切り分け
         in_context, in_context_unk_label,\
             in_context_chars, in_context_mask,\
             in_question, in_question_unk_label,\

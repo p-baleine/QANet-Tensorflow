@@ -54,7 +54,8 @@ evaluate:
 	python -m scripts.evaluate \
 		--data $(EVAL_DATA_DIR) \
 		--raw-data-file $(DEV_DATA) \
-		--save-path $(EVAL_LOG_DIR)
+		--save-path $(EVAL_LOG_DIR) \
+		--use-ema 1
 
 test:
 	nosetests
