@@ -37,7 +37,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 @click.option('--data', type=click.Path())
 @click.option('--save-path', type=click.Path(exists=True))
 @click.option('--raw-data-file', type=click.File())
-def main(data, save_path, raw_data_file):
+@click.option('--use-ema', type=click.BOOL, default=True)
+def main(data, save_path, raw_data_file, use_ema):
     hparams = load_hparams(save_path)
 
     logger.info('Hyper parameters:')
@@ -59,10 +60,19 @@ def main(data, save_path, raw_data_file):
     logger.info('Starting prediction...')
 
     prediction_op = model(inputs, training=False)
+
+    if use_ema:
+        logger.info('Using shadow variables.')
+        ema = tf.train.ExponentialMovingAverage(decay=hparams.ema_decay)
+        saver = tf.train.Saver(ema.variables_to_restore())
+        scaffold = tf.train.Scaffold(saver=saver)
+    else:
+        scaffold = tf.train.Scaffold()
+
     starts = []
     ends = []
 
-    with monitored_session(save_path, tf.train.Scaffold()) as sess:
+    with monitored_session(save_path, scaffold) as sess:
         sess.run(iterator.initializer, feed_dict=feed_dict)
 
         while not sess.should_stop():

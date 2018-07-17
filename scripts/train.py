@@ -76,7 +76,7 @@ def main(data, hparams, save_path):
 
     grads = optimizer.compute_gradients(
         train_loss, colocate_gradients_with_ops=True)
-    train_op = optimizer.apply_gradients(grads, global_step=global_step)
+    apply_gradient_op = optimizer.apply_gradients(grads, global_step=global_step)
     train_acc = qanet_model.accuracy_fn(
         model, train_inputs, train_labels, hparams.batch_size, training=True)
 
@@ -84,6 +84,15 @@ def main(data, hparams, save_path):
         model, dev_inputs, dev_labels, training=False)
     dev_acc = qanet_model.accuracy_fn(
         model, dev_inputs, dev_labels, hparams.batch_size, training=False)
+
+    if hparams.ema_decay < 1.0:
+        # Apply exponential moving average.
+        ema = tf.train.ExponentialMovingAverage(
+            hparams.ema_decay, global_step)
+        with tf.control_dependencies([apply_gradient_op]):
+            train_op = ema.apply(tf.trainable_variables())
+    else:
+        train_op = apply_gradient_op
 
     tf.summary.scalar('train_loss', train_loss)
     tf.summary.scalar('dev_loss', dev_loss)
