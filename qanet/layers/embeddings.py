@@ -15,10 +15,16 @@ class WordEmbedding(tf.keras.layers.Layer):
           dimはembedding_matrixのshape[1]
     """
 
-    def __init__(self, embeddind_matrix, **kwargs):
+    def __init__(self,
+                 embeddind_matrix,
+                 unk_initializer=tf.contrib.layers.xavier_initializer(),
+                 unk_regularizer=None,
+                 **kwargs):
         self._embedding_matrix = embeddind_matrix
         self._V = self._embedding_matrix.shape[0]
         self._dim = self._embedding_matrix.shape[1]
+        self._unk_initializer = unk_initializer
+        self._unk_regularizer = unk_regularizer
         super(WordEmbedding, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -38,7 +44,8 @@ class WordEmbedding(tf.keras.layers.Layer):
         self._W_unk = self.add_variable(
             'unk_embedding',
             [1, self._dim],
-            initializer=tf.contrib.layers.xavier_initializer())
+            initializer=self._unk_initializer,
+            regularizer=self._unk_regularizer)
 
         super(WordEmbedding, self).build(input_shape)
 
@@ -69,6 +76,7 @@ class CharacterEmbedding(tf.keras.layers.Layer):
                  embedding_initializer=tf.contrib.layers.xavier_initializer(),
                  conv_kernel_initializer=tf.contrib.layers.xavier_initializer(),
                  conv_bias_initializer=tf.zeros_initializer(),
+                 regularizer=None,
                  **kwargs):
         """文字の埋め込み
 
@@ -89,6 +97,7 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         self._embedding_initializer = embedding_initializer
         self._conv_kernel_initializer = conv_kernel_initializer
         self._conv_bias_initializer = conv_bias_initializer
+        self._regularizer = regularizer
         super(CharacterEmbedding, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -96,15 +105,18 @@ class CharacterEmbedding(tf.keras.layers.Layer):
             self._embedding = self.add_variable(
                 'embedding',
                 [self._vocab_size, self._emb_dim],
-                initializer=self._embedding_initializer)
+                initializer=self._embedding_initializer,
+                regularizer=self._regularizer)
         self._kernel = self.add_variable(
             'kernel',
             [1, self._filter_size, self._emb_dim, self._out_dim],
-            initializer=self._conv_kernel_initializer)
+            initializer=self._conv_kernel_initializer,
+            regularizer=self._regularizer)
         self._bias = self.add_variable(
             'bias',
             [1, 1, 1, self._out_dim],
-            initializer=self._conv_bias_initializer)
+            initializer=self._conv_bias_initializer,
+            regularizer=self._regularizer)
         super(CharacterEmbedding, self).build(input_shape)
 
     def call(self, x):

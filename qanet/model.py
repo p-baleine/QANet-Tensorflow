@@ -19,15 +19,25 @@ class QANet(tf.keras.Model):
         self.dropout_rate = hparams.dropout_rate
         self.num_gpus = hparams.num_gpus
 
-        self.word_embedding = WordEmbedding(embedding_matrix)
+        self._regularizer = tf.contrib.layers.l2_regularizer(
+            scale=hparams.l2_regularizer_scale)
+
+        self.word_embedding = WordEmbedding(
+            embedding_matrix,
+            unk_regularizer=self._regularizer)
         self.char_embedding = CharacterEmbedding(
             vocab_size=hparams.char_vocab_size,
             emb_dim=hparams.char_emb_dim,
             out_dim=hparams.char_dim,
-            filter_size=hparams.char_conv_filter_size)
+            filter_size=hparams.char_conv_filter_size,
+            regularizer=self._regularizer)
 
-        self.context_highway = HighwayNetwork(hparams.highway_num_layers)
-        self.question_highway = HighwayNetwork(hparams.highway_num_layers)
+        self.context_highway = HighwayNetwork(
+            hparams.highway_num_layers,
+            regularizer=self._regularizer)
+        self.question_highway = HighwayNetwork(
+            hparams.highway_num_layers,
+            regularizer=self._regularizer)
 
         # the input of this layer is a vector of dimension
         # p1 + p2 = 500 for each individual word, which is immediately
@@ -36,16 +46,21 @@ class QANet(tf.keras.Model):
             filters=hparams.dim,
             kernel_size=(1, 1),
             padding='same',
-            activation='relu')
+            activation='relu',
+            kernel_regularizer=self._regularizer,
+            bias_regularizer=self._regularizer)
 
         self.embedding_encoder = Encoder(
             dim=hparams.dim,
             filter_size=hparams.embedding_encoder_filter_size,
             num_conv_layers=hparams.embedding_encoder_num_conv_layers,
             num_heads=hparams.embedding_encoder_num_heads,
-            layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
+            layer_dropout_survival_prob=hparams.layer_dropout_survival_prob,
+            conv_regularizer=self._regularizer,
+            attention_regularizer=self._regularizer,
+            ff_regularizer=self._regularizer)
 
-        self.similarity_matrix = SimilarityMaxtirx()
+        self.similarity_matrix = SimilarityMaxtirx(regularizer=self._regularizer)
         self.context_query_attention = ContextQueryAttention()
         self.query_context_attention = QueryContextAttention()
 
@@ -53,7 +68,9 @@ class QANet(tf.keras.Model):
             filters=hparams.dim,
             kernel_size=(1, 1),
             padding='same',
-            activation='relu')
+            activation='relu',
+            kernel_regularizer=self._regularizer,
+            bias_regularizer=self._regularizer)
 
         # Model encoders
         self.model_encoders = []
@@ -64,14 +81,19 @@ class QANet(tf.keras.Model):
                 filter_size=hparams.model_encoder_filter_size,
                 num_conv_layers=hparams.model_encoder_num_conv_layers,
                 num_heads=hparams.model_encoder_num_heads,
-                layer_dropout_survival_prob=hparams.layer_dropout_survival_prob)
+                layer_dropout_survival_prob=hparams.layer_dropout_survival_prob,
+                conv_regularizer=self._regularizer,
+                attention_regularizer=self._regularizer,
+                ff_regularizer=self._regularizer)
             self.model_encoders.append(e)
             # make keras.Model classes to track all the variables in
             # a list of Layer objects.
             setattr(self, 'model_encoder-{}'.format(block), e)
 
-        self.position_prediction1 = PositionPrediction()
-        self.porision_prediction2 = PositionPrediction()
+        self.position_prediction1 = PositionPrediction(
+            regularizer=self._regularizer)
+        self.porision_prediction2 = PositionPrediction(
+            regularizer=self._regularizer)
 
     def call(self, inputs, training):
         # TODO trainingで切り分け
@@ -185,6 +207,10 @@ class QANet(tf.keras.Model):
         p_2 = self.porision_prediction2((M_0, M_2, in_context_mask))
 
         return [p_1, p_2]
+
+    @property
+    def regularizer(self):
+        return self._regularizer
 
     def _multiple_encoder_block(self, x, mask, training):
         # TODO Currentry only 2 gpus are assumed.

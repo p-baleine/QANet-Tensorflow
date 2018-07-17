@@ -1,8 +1,13 @@
 import tensorflow as tf
 
 class ResidualNormed(tf.keras.layers.Wrapper):
-    def __init__(self, layer, epsilon=1e-6, **kwargs):
+    def __init__(self,
+                 layer,
+                 epsilon=1e-6,
+                 regularizer=None,
+                 **kwargs):
         self._epsilon = epsilon
+        self._regularizer = regularizer
         super(ResidualNormed, self).__init__(layer, **kwargs)
 
     def build(self, input_shape):
@@ -15,11 +20,13 @@ class ResidualNormed(tf.keras.layers.Wrapper):
         self._scale = self.add_variable(
             'scale',
             [filters],
-            initializer=tf.ones_initializer())
+            initializer=tf.ones_initializer(),
+            regularizer=self._regularizer)
         self._bias = self.add_variable(
             'bias',
             [filters],
-            initializer=tf.zeros_initializer())
+            initializer=tf.zeros_initializer(),
+            regularizer=self._regularizer)
 
         self.layer.build(input_shape)
 
