@@ -74,9 +74,11 @@ def main(data, hparams, save_path):
             model.regularizer, variables)
         train_loss += l2_loss
 
-    grads = optimizer.compute_gradients(
-        train_loss, colocate_gradients_with_ops=True)
-    apply_gradient_op = optimizer.apply_gradients(grads, global_step=global_step)
+    grads, tvars = zip(*optimizer.compute_gradients(
+        train_loss, colocate_gradients_with_ops=True))
+    clipped_grads, _ = tf.clip_by_global_norm(grads, hparams.max_grad_norm)
+    apply_gradient_op = optimizer.apply_gradients(
+        zip(clipped_grads, tvars), global_step=global_step)
     train_acc = qanet_model.accuracy_fn(
         model, train_inputs, train_labels, hparams.batch_size, training=True)
 

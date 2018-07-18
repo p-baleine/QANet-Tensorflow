@@ -5,6 +5,7 @@
   "l2_regularizer_scale": 3e-7,
   "warmup_steps": 1000,
   "ema_decay": 0.9999,
+  "max_grad_norm": 5.0,
   "max_context_length": 400,
   "max_question_length": 30,
   "max_word_length": 16,
