@@ -24,6 +24,7 @@ import squad
 
 import qanet.model as qanet_model
 
+from qanet.model_utils import DatasetInitializerHook
 from qanet.model_utils import create_iterator, get_answer_spane
 from qanet.model_utils import load_data, load_embedding, load_hparams
 from qanet.model_utils import monitored_session
@@ -50,7 +51,7 @@ def main(data, save_path, raw_data_file, use_ema):
     embedding = load_embedding(data)
 
     id, _, iterator, feed_dict = create_iterator(
-        dev_data, hparams, do_sort=False, repeat_count=None)
+        dev_data, hparams, do_shuffle=False, repeat_count=None)
     inputs, _ = iterator.get_next()
 
     logger.info('Preparing model...')
@@ -72,9 +73,9 @@ def main(data, save_path, raw_data_file, use_ema):
     starts = []
     ends = []
 
-    with monitored_session(save_path, scaffold) as sess:
-        sess.run(iterator.initializer, feed_dict=feed_dict)
-
+    with monitored_session(
+            save_path, scaffold,
+            hooks=[DatasetInitializerHook(iterator, feed_dict)]) as sess:
         while not sess.should_stop():
             start, end = sess.run(prediction_op)
             starts += start.tolist()

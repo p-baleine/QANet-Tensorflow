@@ -46,9 +46,9 @@ def main(data, hparams, save_path):
 
     train_data, dev_data = load_data(data)
     _, _, train_iterator, train_feed_dict = create_iterator(
-        train_data, hparams, do_sort=True, repeat_count=hparams.epochs)
+        train_data, hparams, do_shuffle=True, repeat_count=hparams.epochs)
     _, _, dev_iterator, dev_feed_dict = create_iterator(
-        dev_data, hparams, do_sort=False, repeat_count=-1)
+        dev_data, hparams, do_shuffle=False, repeat_count=-1)
     embedding = load_embedding(data)
 
     logger.info('Preparing model...')
@@ -60,10 +60,7 @@ def main(data, hparams, save_path):
     global_step = tf.train.get_or_create_global_step()
 
     # learning rate warm-up scheme
-    learning_rate = tf.minimum(
-        hparams.learning_rate,
-        0.001 / tf.log(tf.cast(hparams.warmup_steps - 1, tf.float32))
-        * tf.log(tf.cast(global_step, tf.float32) + 1))
+    learning_rate = get_scheduled_learning_rate(hparams, global_step)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
@@ -109,14 +106,19 @@ def main(data, hparams, save_path):
     scaffold = tf.train.Scaffold()
     steps_per_epoch = len(train_data) // hparams.batch_size
     hooks = get_training_session_run_hooks(
-        save_path, train_loss, dev_loss, scaffold, steps_per_epoch)
+        save_path, train_loss, dev_loss, scaffold, steps_per_epoch,
+        train_iterator, train_feed_dict,
+        dev_iterator, dev_feed_dict)
 
     with monitored_session(save_path, scaffold, hooks=hooks) as sess:
-        sess.run([train_iterator.initializer, dev_iterator.initializer],
-                 feed_dict={**train_feed_dict, **dev_feed_dict})
-
         while not sess.should_stop():
             sess.run([train_op, merged])
+
+def get_scheduled_learning_rate(hparams, global_step):
+    return tf.minimum(
+        hparams.learning_rate,
+        0.001 / tf.log(tf.cast(hparams.warmup_steps - 1, tf.float32))
+        * tf.log(tf.cast(global_step, tf.float32) + 1))
 
 if __name__ == '__main__':
     main()
