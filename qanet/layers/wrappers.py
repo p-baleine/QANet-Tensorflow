@@ -33,12 +33,17 @@ class ResidualNormed(tf.keras.layers.Wrapper):
         super(ResidualNormed, self).build()
 
     def call(self, inputs):
-        output = self.layer.call(inputs)
         x = inputs[0] if type(inputs) is list else inputs
-        mean = tf.reduce_mean(output, axis=[-1], keep_dims=True)
-        variance = tf.reduce_mean(tf.square(output - mean), axis=[-1], keep_dims=True)
-        norm_output = (output - mean) * tf.rsqrt(variance + self._epsilon)
-        return x + (norm_output * self._scale + self._bias)
+        mean = tf.reduce_mean(x, axis=[-1], keep_dims=True)
+        variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keep_dims=True)
+        norm_x = (x - mean) * tf.rsqrt(variance + self._epsilon)
+        norm_x = norm_x * self._scale + self._bias
+
+        if type(inputs) is list:
+            # On self attetion, inputs are (x, x, x, x_mask)
+            return self.layer.call([norm_x] * (len(inputs) - 1) + [inputs[-1]]) + x
+        else:
+            return self.layer.call(norm_x) + x
 
     def compute_output_shape(self, input_shape):
         return input_shape
