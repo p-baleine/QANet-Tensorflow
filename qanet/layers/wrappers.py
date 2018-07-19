@@ -5,9 +5,11 @@ class ResidualNormed(tf.keras.layers.Wrapper):
                  layer,
                  epsilon=1e-6,
                  regularizer=None,
+                 dropout_rate=0.0,
                  **kwargs):
         self._epsilon = epsilon
         self._regularizer = regularizer
+        self._dropout_rate = dropout_rate
         super(ResidualNormed, self).__init__(layer, **kwargs)
 
     def build(self, input_shape):
@@ -32,7 +34,7 @@ class ResidualNormed(tf.keras.layers.Wrapper):
 
         super(ResidualNormed, self).build()
 
-    def call(self, inputs):
+    def call(self, inputs, training):
         x = inputs[0] if type(inputs) is list else inputs
         mean = tf.reduce_mean(x, axis=[-1], keep_dims=True)
         variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keep_dims=True)
@@ -41,9 +43,14 @@ class ResidualNormed(tf.keras.layers.Wrapper):
 
         if type(inputs) is list:
             # On self attetion, inputs are (x, x, x, x_mask)
-            return self.layer.call([norm_x] * (len(inputs) - 1) + [inputs[-1]]) + x
+            output = self.layer.call([norm_x] * (len(inputs) - 1) + [inputs[-1]])
         else:
-            return self.layer.call(norm_x) + x
+            output = self.layer.call(norm_x)
+
+        if training:
+            output = tf.nn.dropout(output, keep_prob=1.0 - self._dropout_rate)
+
+        return output + x
 
     def compute_output_shape(self, input_shape):
         return input_shape
@@ -58,7 +65,7 @@ class LayerDropped(tf.keras.layers.Wrapper):
         super(LayerDropped, self).build()
 
     def call(self, inputs, training):
-        output = self.layer.call(inputs)
+        output = self.layer.call(inputs, training=training)
         inputs = inputs[0] if type(inputs) is list else inputs
 
         if not training:

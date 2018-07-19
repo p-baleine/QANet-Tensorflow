@@ -32,12 +32,10 @@ class QANet(tf.keras.Model):
             filter_size=hparams.char_conv_filter_size,
             regularizer=self._regularizer)
 
-        self.context_highway = HighwayNetwork(
+        self.highway_network = HighwayNetwork(
             hparams.highway_num_layers,
-            regularizer=self._regularizer)
-        self.question_highway = HighwayNetwork(
-            hparams.highway_num_layers,
-            regularizer=self._regularizer)
+            regularizer=self._regularizer,
+            dropout_rate=hparams.dropout_rate)
 
         # the input of this layer is a vector of dimension
         # p1 + p2 = 500 for each individual word, which is immediately
@@ -56,6 +54,7 @@ class QANet(tf.keras.Model):
             num_conv_layers=hparams.embedding_encoder_num_conv_layers,
             num_heads=hparams.embedding_encoder_num_heads,
             layer_dropout_survival_prob=hparams.layer_dropout_survival_prob,
+            dropout_rate=hparams.dropout_rate,
             conv_regularizer=self._regularizer,
             attention_regularizer=self._regularizer,
             ff_regularizer=self._regularizer)
@@ -82,6 +81,7 @@ class QANet(tf.keras.Model):
                 num_conv_layers=hparams.model_encoder_num_conv_layers,
                 num_heads=hparams.model_encoder_num_heads,
                 layer_dropout_survival_prob=hparams.layer_dropout_survival_prob,
+                dropout_rate=hparams.dropout_rate,
                 conv_regularizer=self._regularizer,
                 attention_regularizer=self._regularizer,
                 ff_regularizer=self._regularizer)
@@ -122,13 +122,8 @@ class QANet(tf.keras.Model):
         context = tf.concat([context_emb, context_char_emb], axis=2)
         question = tf.concat([question_emb, question_char_emb], axis=2)
 
-        context = self.context_highway(context)
-        question = self.question_highway(question)
-
-        if training:
-            keep_prob = 1.0 - self.dropout_rate
-            context = tf.nn.dropout(context, keep_prob)
-            question = tf.nn.dropout(question, keep_prob)
+        context = self.highway_network(context, training=training)
+        question = self.highway_network(question, training=training)
 
         # Embedding Encoder Layer.
 
@@ -151,11 +146,6 @@ class QANet(tf.keras.Model):
         question = self.embedding_encoder(
             (question, in_question_mask), training=training)
 
-        if training:
-            keep_prob = 1.0 - self.dropout_rate
-            context = tf.nn.dropout(context, keep_prob)
-            question = tf.nn.dropout(question, keep_prob)
-
         # Context-Query Attention Layer.
 
         S = self.similarity_matrix(
@@ -166,10 +156,6 @@ class QANet(tf.keras.Model):
         A = self.context_query_attention((S_r, question))
         # (batch_size, N, dim)
         B = self.query_context_attention((S_r, S_c, context))
-
-        if training:
-            A = tf.nn.dropout(A, 1.0 - self.dropout_rate)
-            B = tf.nn.dropout(B, 1.0 - self.dropout_rate)
 
         # Model Encoder Layer.
 
@@ -195,15 +181,14 @@ class QANet(tf.keras.Model):
         M_2 = self._multiple_encoder_block(
             M_1, in_context_mask, training=training)
 
-        if training:
-            M_0 = tf.nn.dropout(M_0, 1.0 - self.dropout_rate)
-            M_1 = tf.nn.dropout(M_1, 1.0 - self.dropout_rate)
-            M_2 = tf.nn.dropout(M_2, 1.0 - self.dropout_rate)
-
         # Output layer.
 
         p_1 = self.position_prediction1((M_0, M_1, in_context_mask))
         p_2 = self.porision_prediction2((M_0, M_2, in_context_mask))
+
+        if training:
+            p_1 = tf.nn.dropout(p_1, 1.0 - self.dropout_rate)
+            p_2 = tf.nn.dropout(p_2, 1.0 - self.dropout_rate)
 
         return [p_1, p_2]
 
