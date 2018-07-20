@@ -5,8 +5,9 @@ from tensor2tensor.layers.common_attention import add_timing_signal_1d
 from .layer_utils import exp_mask
 
 class Highway(tf.keras.layers.Layer):
-    def __init__(self, regularizer=None, **kwargs):
+    def __init__(self, regularizer=None, dropout_rate=0.0, **kwargs):
         self._regularizer = regularizer
+        self._dropout_rate = dropout_rate
         super(Highway, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -33,9 +34,13 @@ class Highway(tf.keras.layers.Layer):
             initializer=tf.zeros_initializer(),
             regularizer=self._regularizer)
 
-    def call(self, x):
+    def call(self, x, training):
         T = tf.sigmoid(tf.tensordot(x, self._W_T, [[2], [0]]) + self._b_T)
         H = tf.nn.relu(tf.tensordot(x, self._W, [[2], [0]]) + self._b)
+
+        if training:
+            H = tf.nn.dropout(H, keep_prob=1.0 - self._dropout_rate)
+
         return H * T + (1. - T) * x
 
     def compute_output_shape(self, input_shape):
@@ -45,17 +50,19 @@ class HighwayNetwork(tf.keras.models.Model):
     def __init__(self,
                  num_layers,
                  regularizer=None,
+                 dropout_rate=0.0,
                  **kwargs):
         super(HighwayNetwork, self).__init__(**kwargs)
 
         for l in range(num_layers):
             setattr(self, 'highway_{}'.format(l),
-                    Highway(regularizer=regularizer))
+                    Highway(regularizer=regularizer,
+                            dropout_rate=dropout_rate))
 
-    def call(self, x):
+    def call(self, x, training):
         y = x
         for layer in self.layers:
-            y = layer(y)
+            y = layer(y, training=training)
         return y
 
 class PositionEncoding(tf.keras.layers.Lambda):
