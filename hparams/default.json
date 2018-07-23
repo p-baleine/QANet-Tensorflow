@@ -9,7 +9,7 @@
   "max_context_length": 400,
   "max_question_length": 30,
   "max_word_length": 16,
-  "char_emb_dim": 8,
+  "char_emb_dim": 200,
   "char_dim": 200,
   "char_conv_filter_size": 5,
   "highway_num_layers": 2,
