@@ -61,7 +61,11 @@ def main(data, hparams, save_path):
 
     # learning rate warm-up scheme
     learning_rate = get_scheduled_learning_rate(hparams, global_step)
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    optimizer = tf.train.AdamOptimizer(
+        learning_rate=learning_rate,
+        beta1=0.8,
+        beta2=0.999,
+        epsilon=1e-7)
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
 
