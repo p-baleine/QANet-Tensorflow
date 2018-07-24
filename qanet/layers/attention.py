@@ -135,7 +135,7 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         # (batch_size, N, M, d * 3)
         S = tf.concat([c, q, c * q], 3)
         # (batch_size, N, M)
-        logits = tf.reshape(tf.tensordot(S, self._W, [[3], [0]]), [-1, N, M])
+        logits = tf.squeeze(tf.tensordot(S, self._W, [[3], [0]]), [-1])
 
         # logitsと同じ形のmaskを作る
         # (batch_size, N, M)
