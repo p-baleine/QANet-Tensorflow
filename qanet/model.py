@@ -39,13 +39,13 @@ class QANet(tf.keras.Model):
         # the input of this layer is a vector of dimension
         # p1 + p2 = 500 for each individual word, which is immediately
         # mapped to d = 128 by a one-dimensional convolution.
-        self.embedding_encoder_projection = tf.keras.layers.Conv2D(
-            filters=hparams.dim,
-            kernel_size=(1, 1),
-            padding='same',
-            use_bias=False,
-            kernel_regularizer=self._regularizer,
-            bias_regularizer=self._regularizer)
+        # self.embedding_encoder_projection = tf.keras.layers.Conv2D(
+        #     filters=hparams.dim,
+        #     kernel_size=(1, 1),
+        #     padding='same',
+        #     use_bias=False,
+        #     kernel_regularizer=self._regularizer,
+        #     bias_regularizer=self._regularizer)
 
         self.embedding_encoder = Encoder(
             dim=hparams.dim,
@@ -56,7 +56,8 @@ class QANet(tf.keras.Model):
             dropout_rate=hparams.dropout_rate,
             conv_regularizer=self._regularizer,
             attention_regularizer=self._regularizer,
-            ff_regularizer=self._regularizer)
+            ff_regularizer=self._regularizer,
+            input_dim=hparams.word_emb_dim + hparams.char_emb_dim)
 
         self.similarity_matrix = SimilarityMaxtirx(regularizer=self._regularizer)
         self.context_query_attention = ContextQueryAttention()
@@ -127,17 +128,17 @@ class QANet(tf.keras.Model):
         # Embedding Encoder Layer.
 
         # (batch_size, 1, N, input_dim)
-        context = tf.expand_dims(context, axis=1)
-        # (batch_size, 1, M, input_dim)
-        question = tf.expand_dims(question, axis=1)
-        # (batch_size, 1, N, out_dim)
-        context = self.embedding_encoder_projection(context)
-        # (batch_size, 1, M, out_dim)
-        question = self.embedding_encoder_projection(question)
-        # (batch_size, N, out_dim)
-        context = tf.reshape(context, [-1, N, self.dim])
-        # (batch_size, M, out_dim)
-        question = tf.reshape(question, [-1, M, self.dim])
+        # context = tf.expand_dims(context, axis=1)
+        # # (batch_size, 1, M, input_dim)
+        # question = tf.expand_dims(question, axis=1)
+        # # (batch_size, 1, N, out_dim)
+        # context = self.embedding_encoder_projection(context)
+        # # (batch_size, 1, M, out_dim)
+        # question = self.embedding_encoder_projection(question)
+        # # (batch_size, N, out_dim)
+        # context = tf.reshape(context, [-1, N, self.dim])
+        # # (batch_size, M, out_dim)
+        # question = tf.reshape(question, [-1, M, self.dim])
         # (batch_size, N, out_dim)
         context = self.embedding_encoder(
             (context, in_context_mask), training=training)

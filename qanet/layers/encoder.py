@@ -28,8 +28,12 @@ class Encoder(tf.keras.models.Model):
                  conv_regularizer=None,
                  attention_regularizer=None,
                  ff_regularizer=None,
+                 input_dim=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
+
+        self._do_projection = input_dim is not None and input_dim != dim
+        self._dropout_rate = dropout_rate
 
         num_total_layers = num_conv_layers + 2
         layer_idx = 0
@@ -41,23 +45,30 @@ class Encoder(tf.keras.models.Model):
 
         layer_idx += 1
 
+        conv_params = dict(
+            filters=dim,
+            kernel_size=(1, filter_size),
+            padding='same',
+            activation='relu',
+            depthwise_regularizer=conv_regularizer,
+            pointwise_regularizer=conv_regularizer,
+            bias_regularizer=conv_regularizer,
+            activity_regularizer=conv_regularizer)
+
         for idx in range(num_conv_layers):
-            layer = LayerDropped(
-                ResidualNormed(
-                    tf.keras.layers.SeparableConv2D(
-                        filters=dim,
-                        kernel_size=(1, filter_size),
-                        padding='same',
-                        activation='relu',
-                        depthwise_regularizer=conv_regularizer,
-                        pointwise_regularizer=conv_regularizer,
-                        bias_regularizer=conv_regularizer,
-                        activity_regularizer=conv_regularizer),
-                    dropout_rate=dropout_rate,
-                    regularizer=conv_regularizer),
-                layer_idx=layer_idx,
-                num_total_layers=num_total_layers,
-                p_L=layer_dropout_survival_prob)
+            if self._do_projection and idx == 0:
+                # input_dimとdimが異なる場合、最初の層でlayer dropoutと
+                # residual connectionが構築できないためskipする
+                layer = tf.keras.layers.SeparableConv2D(**conv_params)
+            else:
+                layer = LayerDropped(
+                    ResidualNormed(
+                        tf.keras.layers.SeparableConv2D(**conv_params),
+                        dropout_rate=dropout_rate,
+                        regularizer=conv_regularizer),
+                    layer_idx=layer_idx,
+                    num_total_layers=num_total_layers,
+                    p_L=layer_dropout_survival_prob)
             self.conv_layers.append(layer)
             setattr(self, 'separable_conv-{}'.format(idx), layer)
             layer_idx += 1
@@ -103,9 +114,14 @@ class Encoder(tf.keras.models.Model):
         # (batch_size, 1, N, input_dim)
         x = tf.expand_dims(x, axis=1)
 
-        for conv in self.conv_layers:
+        for idx, conv in enumerate(self.conv_layers):
             # (batch_size, 1, N, dim)
-            x = conv(x, training=training)
+            if self._do_projection and idx == 0:
+                x = conv(x)
+                if training:
+                    x = tf.nn.dropout(x, keep_prob=1.0 - self._dropout_rate)
+            else:
+                x = conv(x, training=training)
 
         # (batch_size, N, dim)
         x = tf.squeeze(x, axis=1)

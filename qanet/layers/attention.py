@@ -128,14 +128,14 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         # (batch_size, N, M, d)
         c = tf.tile(tf.expand_dims(c, 2), [1, 1, M, 1])
         q = tf.tile(tf.expand_dims(q, 1), [1, N, 1, 1])
-        # (batch_size, N * M, d)
-        c = tf.reshape(c, [-1, N * M, d])
-        q = tf.reshape(q, [-1, N * M, d])
-        c_q = c * q
-        # (batch_size, N * M, d * 3)
-        S = tf.concat([c, q, c_q], 2)
+        ## (batch_size, N * M, d)
+        # c = tf.reshape(c, [-1, N * M, d])
+        # q = tf.reshape(q, [-1, N * M, d])
+        # c_q = c * q
+        # (batch_size, N, M, d * 3)
+        S = tf.concat([c, q, c * q], 3)
         # (batch_size, N, M)
-        logits = tf.reshape(tf.tensordot(S, self._W, [[2], [0]]), [-1, N, M])
+        logits = tf.reshape(tf.tensordot(S, self._W, [[3], [0]]), [-1, N, M])
 
         # logitsと同じ形のmaskを作る
         # (batch_size, N, M)
