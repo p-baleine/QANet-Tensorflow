@@ -44,7 +44,7 @@ class QANet(tf.keras.Model):
             filters=hparams.dim,
             kernel_size=(1, 1),
             padding='same',
-            activation='relu',
+            use_bias=False,
             kernel_regularizer=self._regularizer,
             bias_regularizer=self._regularizer)
 
@@ -67,7 +67,7 @@ class QANet(tf.keras.Model):
             filters=hparams.dim,
             kernel_size=(1, 1),
             padding='same',
-            activation='relu',
+            use_bias=False,
             kernel_regularizer=self._regularizer,
             bias_regularizer=self._regularizer)
 
