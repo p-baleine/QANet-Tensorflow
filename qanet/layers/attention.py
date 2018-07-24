@@ -27,7 +27,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                  q_initializer=tf.contrib.layers.xavier_initializer(),
                  k_initializer=tf.contrib.layers.xavier_initializer(),
                  v_initializer=tf.contrib.layers.xavier_initializer(),
-                 o_initializer=tf.contrib.layers.xavier_initializer(),
+                 # o_initializer=tf.contrib.layers.xavier_initializer(),
                  regularizer=None,
                  **kwargs):
         self._num_heads = num_heads
@@ -37,7 +37,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._q_initializer = q_initializer
         self._k_initializer = k_initializer
         self._v_initializer = v_initializer
-        self._o_initializer = o_initializer
+        # self._o_initializer = o_initializer
         self._regularizer = regularizer
         super(MultiHeadAttention, self).__init__(**kwargs)
 
@@ -57,11 +57,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             [self._input_dim, self._d_v],
             initializer=self._v_initializer,
             regularizer=self._regularizer)
-        self._W_O = self.add_variable(
-            'W_O',
-            [self._d_v, self._input_dim],
-            initializer=self._o_initializer,
-            regularizer=self._regularizer)
+        # self._W_O = self.add_variable(
+        #     'W_O',
+        #     [self._d_v, self._input_dim],
+        #     initializer=self._o_initializer,
+        #     regularizer=self._regularizer)
 
         return super(MultiHeadAttention, self).build(input_shape)
 
@@ -85,7 +85,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # (batch_size, length, d_v)
         x = combine_heads(x)
         # (batch_size, length, input_dim)
-        return tf.tensordot(x, self._W_O, [[2], [0]])
+        # return tf.tensordot(x, self._W_O, [[2], [0]])
+        return x
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
