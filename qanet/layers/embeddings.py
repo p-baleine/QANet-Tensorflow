@@ -30,8 +30,6 @@ class WordEmbedding(tf.keras.layers.Layer):
     def build(self, input_shape):
         words_shape, word_unk_label_shape = input_shape
 
-        assert words_shape[-1] == word_unk_label_shape[-1]
-
         with tf.device('/cpu:0'):
             self._W = self.add_variable(
                 'embedding',
@@ -121,7 +119,7 @@ class CharacterEmbedding(tf.keras.layers.Layer):
 
     def call(self, x):
         x = tf.cast(x, tf.int32)
-        N, W = x.shape[1:]
+        N, W = tf.shape(x)[1], tf.shape(x)[2]
 
         # from BiDAF
         # Characters are embedded into vectors, which can be

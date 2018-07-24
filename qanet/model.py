@@ -12,8 +12,7 @@ class QANet(tf.keras.Model):
         super(QANet, self).__init__(**kwargs)
 
         self.dim = hparams.dim
-        self.N = hparams.max_context_length
-        self.M = hparams.max_question_length
+        self.W = hparams.max_word_length
         self.word_dropout_rate = hparams.word_dropout_rate
         self.char_dropout_rate = hparams.char_dropout_rate
         self.dropout_rate = hparams.dropout_rate
@@ -96,10 +95,10 @@ class QANet(tf.keras.Model):
             regularizer=self._regularizer)
 
     def call(self, inputs, training):
-        in_context, in_context_unk_label,\
+        N, M, in_context, in_context_unk_label,\
             in_context_chars, in_context_mask,\
             in_question, in_question_unk_label,\
-            in_question_chars, in_question_mask = inputs
+            in_question_chars, in_question_mask = self._slice_inputs(inputs)
 
         # Input Embedding Layer.
 
@@ -136,9 +135,9 @@ class QANet(tf.keras.Model):
         # (batch_size, 1, M, out_dim)
         question = self.embedding_encoder_projection(question)
         # (batch_size, N, out_dim)
-        context = tf.reshape(context, [-1, self.N, self.dim])
+        context = tf.reshape(context, [-1, N, self.dim])
         # (batch_size, M, out_dim)
-        question = tf.reshape(question, [-1, self.M, self.dim])
+        question = tf.reshape(question, [-1, M, self.dim])
         # (batch_size, N, out_dim)
         context = self.embedding_encoder(
             (context, in_context_mask), training=training)
@@ -172,7 +171,7 @@ class QANet(tf.keras.Model):
         # (batch_size, 1, N, dim)
         x = self.model_encoder_projection(x)
         # (batch_size, N, dim)
-        x = tf.reshape(x, [-1, self.N, self.dim])
+        x = tf.reshape(x, [-1, N, self.dim])
 
         M_0 = self._multiple_encoder_block(
             x, in_context_mask, training=training)
@@ -203,6 +202,37 @@ class QANet(tf.keras.Model):
             with tf.device('/gpu:{}'.format(device)):
                 x = encoder((x, mask), training=training)
         return x
+
+    def _slice_inputs(self, inputs):
+        in_context, in_context_unk_label,\
+            in_context_chars, in_context_mask,\
+            in_question, in_question_unk_label,\
+            in_question_chars, in_question_mask = inputs
+
+        batch_size = tf.shape(in_context)[0]
+        N = tf.reduce_max(tf.reduce_sum(
+            tf.cast(in_context_mask, tf.int32), axis=1))
+        M = tf.reduce_max(tf.reduce_sum(
+            tf.cast(in_question_mask, tf.int32), axis=1))
+        in_context = tf.slice(in_context, [0, 0], [batch_size, N])
+        in_context_unk_label = tf.slice(
+            in_context_unk_label, [0, 0], [batch_size, N])
+        in_context_chars = tf.slice(
+            in_context_chars, [0, 0, 0], [batch_size, N, self.W])
+        in_context_mask = tf.slice(
+            in_context_mask, [0, 0], [batch_size, N])
+        in_question = tf.slice(in_question, [0, 0], [batch_size, M])
+        in_question_unk_label = tf.slice(
+            in_question_unk_label, [0, 0], [batch_size, M])
+        in_question_chars = tf.slice(
+            in_question_chars, [0, 0, 0], [batch_size, M, self.W])
+        in_question_mask = tf.slice(
+            in_question_mask, [0, 0], [batch_size, M])
+
+        return N, M, in_context, in_context_unk_label,\
+            in_context_chars, in_context_mask,\
+            in_question, in_question_unk_label,\
+            in_question_chars, in_question_mask
 
 def loss_fn(model, inputs, targets, training):
     def compute_loss(labels, outputs):

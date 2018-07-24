@@ -111,7 +111,7 @@ class PositionPrediction(tf.keras.layers.Layer):
         logits = tf.squeeze(tf.tensordot(M, self._W, [[2], [0]]))
         logits = exp_mask(logits, context_mask)
         # shape情報が落ちちゃうので明示的にreshapeしておく
-        logits = tf.reshape(logits, [-1, M_a.shape[1]])
+        logits = tf.reshape(logits, [-1, tf.shape(M_a)[1]])
         return logits
 
     def compute_output_shape(self, input_shape):

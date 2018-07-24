@@ -123,7 +123,7 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
 
     def call(self, x):
         c, q, c_mask, q_mask = x
-        N, M, d = c.shape[1], q.shape[1], c.shape[-1]
+        N, M, d = tf.shape(c)[1], tf.shape(q)[1], tf.shape(c)[-1]
 
         # (batch_size, N, M, d)
         c = tf.tile(tf.expand_dims(c, 2), [1, 1, M, 1])
@@ -200,9 +200,9 @@ class QueryContextAttention(tf.keras.layers.Lambda):
         return tf.TensorShape([input_shape[0][0], N, d])
 
 def dot_product_attention(Q, K, V, mask):
-    d_k = tf.cast(K.shape[-1], tf.float32)
+    d_k = tf.cast(tf.shape(K)[-1], tf.float32)
     QK = tf.matmul(Q, K, transpose_b=True)
-    mask = tf.reshape(mask, [-1, 1, 1, QK.shape[-1]])
+    mask = tf.reshape(mask, [-1, 1, 1, tf.shape(QK)[-1]])
     return tf.matmul(tf.nn.softmax(exp_mask(QK, mask) / tf.sqrt(d_k)), V)
 
 def split_heads(x, num_heads):
@@ -212,10 +212,9 @@ def split_heads(x, num_heads):
       x: (batch_size, length, num_heads * dim)
     戻り値: (batch_size, num_heads, length, dim)
     """
-    shape = x.shape.as_list()
+    shape = tf.shape(x)
     # (batch_size, length, num_heads, dim)
-    splitted = tf.reshape(
-        x, [-1] + shape[1:-1] + [num_heads, shape[-1] // num_heads])
+    splitted = tf.reshape(x, [-1, shape[1], num_heads, shape[-1] // num_heads])
     # (batch_size, num_heads, length, dim)
     return tf.transpose(splitted, [0, 2, 1, 3])
 
@@ -227,5 +226,5 @@ def combine_heads(x):
     戻り値: (batch_size, length, num_heads * d_v)
     """
     x = tf.transpose(x, [0, 2, 1, 3])
-    shape = x.shape.as_list()
-    return tf.reshape(x, [-1] + shape[1:-2] + [shape[-2] * shape[-1]])
+    shape = tf.shape(x)
+    return tf.reshape(x, [-1, shape[1], shape[-2] * shape[-1]])
