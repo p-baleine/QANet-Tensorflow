@@ -186,9 +186,9 @@ class QANet(tf.keras.Model):
         p_1 = self.position_prediction1((M_0, M_1, in_context_mask))
         p_2 = self.porision_prediction2((M_0, M_2, in_context_mask))
 
-        if training:
-            p_1 = tf.nn.dropout(p_1, 1.0 - self.dropout_rate)
-            p_2 = tf.nn.dropout(p_2, 1.0 - self.dropout_rate)
+        # if training:
+        #     p_1 = tf.nn.dropout(p_1, 1.0 - self.dropout_rate)
+        #     p_2 = tf.nn.dropout(p_2, 1.0 - self.dropout_rate)
 
         return [p_1, p_2]
 
