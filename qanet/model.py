@@ -6,6 +6,7 @@ from .layers.attention import ContextQueryAttention, QueryContextAttention
 from .layers.core import HighwayNetwork, PositionPrediction
 from .layers.embeddings import WordEmbedding, CharacterEmbedding
 from .layers.encoder import Encoder
+from .layers.layer_utils import exp_mask
 
 class QANet(tf.keras.Model):
     def __init__(self, embedding_matrix, hparams, **kwargs):
@@ -99,7 +100,8 @@ class QANet(tf.keras.Model):
         N, M, in_context, in_context_unk_label,\
             in_context_chars, in_context_mask,\
             in_question, in_question_unk_label,\
-            in_question_chars, in_question_mask = self._slice_inputs(inputs)
+            in_question_chars, in_question_mask = self.truncate_inputs(
+                inputs, self.W)
 
         # Input Embedding Layer.
 
@@ -148,14 +150,26 @@ class QANet(tf.keras.Model):
 
         # Context-Query Attention Layer.
 
+        # (batch_size, N, M)
         S = self.similarity_matrix(
             (context, question, in_context_mask, in_question_mask))
-        S_r = tf.nn.softmax(S, 2)
-        S_c = tf.nn.softmax(S, 1)
+        # S_r = tf.nn.softmax(S, 2)
+        # S_c = tf.nn.softmax(S, 1)
+        # c_mask = in_context_mask
+        # q_mask = in_question_mask
+        # c_mask = tf.cast(tf.tile(tf.expand_dims(c_mask, 2), [1, 1, M]), tf.bool)
+        # q_mask = tf.cast(tf.tile(tf.expand_dims(q_mask, 1), [1, N, 1]), tf.bool)
+        S_r = tf.nn.softmax(exp_mask(S, tf.expand_dims(in_question_mask, 1)), 2)
+        S_c = tf.nn.softmax(exp_mask(S, tf.expand_dims(in_context_mask, 2)), 1)
+
+        # self._S = S_r
+
         # (batch_size, N, dim)
-        A = self.context_query_attention((S_r, question))
+        A = tf.matmul(S_r, question)
+        # A = self.context_query_attention((S_r, question))
         # (batch_size, N, dim)
-        B = self.query_context_attention((S_r, S_c, context))
+        B = tf.matmul(tf.matmul(S_r, tf.transpose(S_c, [0, 2, 1])), context)
+        # B = self.query_context_attention((S_r, S_c, context))
 
         # Model Encoder Layer.
 
@@ -204,7 +218,8 @@ class QANet(tf.keras.Model):
                 x = encoder((x, mask), training=training)
         return x
 
-    def _slice_inputs(self, inputs):
+    @staticmethod
+    def truncate_inputs(inputs, W):
         in_context, in_context_unk_label,\
             in_context_chars, in_context_mask,\
             in_question, in_question_unk_label,\
@@ -219,14 +234,14 @@ class QANet(tf.keras.Model):
         in_context_unk_label = tf.slice(
             in_context_unk_label, [0, 0], [batch_size, N])
         in_context_chars = tf.slice(
-            in_context_chars, [0, 0, 0], [batch_size, N, self.W])
+            in_context_chars, [0, 0, 0], [batch_size, N, W])
         in_context_mask = tf.slice(
             in_context_mask, [0, 0], [batch_size, N])
         in_question = tf.slice(in_question, [0, 0], [batch_size, M])
         in_question_unk_label = tf.slice(
             in_question_unk_label, [0, 0], [batch_size, M])
         in_question_chars = tf.slice(
-            in_question_chars, [0, 0, 0], [batch_size, M, self.W])
+            in_question_chars, [0, 0, 0], [batch_size, M, W])
         in_question_mask = tf.slice(
             in_question_mask, [0, 0], [batch_size, M])
 

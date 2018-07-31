@@ -163,7 +163,8 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         c_mask = tf.cast(tf.tile(tf.expand_dims(c_mask, 2), [1, 1, M]), tf.bool)
         q_mask = tf.cast(tf.tile(tf.expand_dims(q_mask, 1), [1, N, 1]), tf.bool)
 
-        return exp_mask(logits, c_mask & q_mask)
+        return logits
+        # return exp_mask(logits, c_mask & q_mask)
 
     def compute_output_shape(self, input_shape):
         c_shape, q_shape, _, _ = input_shape
