@@ -114,9 +114,19 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
     def build(self, input_shape):
         c_shape, _, _, _ = input_shape
 
-        self._W = self.add_variable(
-            'weight',
-            [c_shape[-1] * 3, 1],
+        self._W1 = self.add_variable(
+            'weight1',
+            [c_shape[-1], 1],
+            initializer=self._initializer,
+            regularizer=self._regularizer)
+        self._W2 = self.add_variable(
+            'weight2',
+            [c_shape[-1], 1],
+            initializer=self._initializer,
+            regularizer=self._regularizer)
+        self._W3 = self.add_variable(
+            'weight3',
+            [1, 1, c_shape[-1]],
             initializer=self._initializer,
             regularizer=self._regularizer)
 
@@ -126,17 +136,27 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         c, q, c_mask, q_mask = x
         N, M, d = tf.shape(c)[1], tf.shape(q)[1], tf.shape(c)[-1]
 
-        # (batch_size, N, M, d)
-        c = tf.tile(tf.expand_dims(c, 2), [1, 1, M, 1])
-        q = tf.tile(tf.expand_dims(q, 1), [1, N, 1, 1])
-        ## (batch_size, N * M, d)
-        # c = tf.reshape(c, [-1, N * M, d])
-        # q = tf.reshape(q, [-1, N * M, d])
-        # c_q = c * q
-        # (batch_size, N, M, d * 3)
-        S = tf.concat([c, q, c * q], 3)
+        # (batch_size * N, d)
+        c_reshape = tf.reshape(c, [-1, d])
+        # (batch_size * M, d)
+        q_reshape = tf.reshape(q, [-1, d])
+
+        # (batch_size, N)
+        part1 = tf.reshape(tf.matmul(c_reshape, self._W1), [-1, N])
+        # (batch_size, M, N)
+        part1 = tf.tile(tf.expand_dims(part1, 1), [1, M, 1])
+        # (batch_size, M)
+        part2 = tf.reshape(tf.matmul(q_reshape, self._W2), [-1, M])
+        # (batch_size, M, N)
+        part2 = tf.tile(tf.expand_dims(part2, 2), [1, 1, N])
+
+        # (batch_size, M, d)
+        q_W3 = q * self._W3
+        # (batch_size, M, N)
+        part3 = tf.matmul(q_W3, tf.transpose(c, [0, 2, 1]))
+
         # (batch_size, N, M)
-        logits = tf.squeeze(tf.tensordot(S, self._W, [[3], [0]]), [-1])
+        logits = tf.transpose(part1 + part2 + part3, [0, 2, 1])
 
         # logitsと同じ形のmaskを作る
         # (batch_size, N, M)
