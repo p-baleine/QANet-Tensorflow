@@ -93,12 +93,7 @@ class Encoder(tf.keras.models.Model):
         # Feed-forward-layer
         self.feed_forward = LayerDropped(
             ResidualNormed(
-                tf.keras.layers.Dense(
-                    dim,
-                    activation='relu',
-                    kernel_regularizer=ff_regularizer,
-                    bias_regularizer=ff_regularizer,
-                    activity_regularizer=ff_regularizer),
+                FeedForward(dim, ff_regularizer),
                 dropout_rate=dropout_rate,
                 regularizer=ff_regularizer),
             layer_idx=layer_idx,
@@ -133,3 +128,29 @@ class Encoder(tf.keras.models.Model):
         x = self.feed_forward(x, training=training)
 
         return x
+
+class FeedForward(tf.keras.models.Model):
+    def __init__(self,
+                 dim,
+                 regularizer,
+                 **kwargs):
+        super(FeedForward, self).__init__(**kwargs)
+
+        self.ff1 = tf.keras.layers.Dense(
+            dim,
+            activation='relu',
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            activity_regularizer=regularizer)
+        self.ff2 = tf.keras.layers.Dense(
+            dim,
+            activation=None,
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            activity_regularizer=regularizer)
+
+    def call(self, inputs):
+        x = self.ff1(inputs)
+        x = self.ff2(x)
+        return x
+
