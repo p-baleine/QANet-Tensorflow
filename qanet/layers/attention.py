@@ -225,7 +225,8 @@ def dot_product_attention(Q, K, V, mask):
     d_k = tf.cast(tf.shape(K)[-1], tf.float32)
     QK = tf.matmul(Q, K, transpose_b=True)
     mask = tf.reshape(mask, [-1, 1, 1, tf.shape(QK)[-1]])
-    return tf.matmul(tf.nn.softmax(exp_mask(QK, mask) / tf.sqrt(d_k)), V)
+    weights = tf.nn.softmax(exp_mask(QK, mask))
+    return tf.matmul(weights / tf.sqrt(d_k), V)
 
 def split_heads(x, num_heads):
     """xの最後の次元をnum_headsに分ける

@@ -47,7 +47,7 @@ class Encoder(tf.keras.models.Model):
 
         conv_params = dict(
             filters=dim,
-            kernel_size=(1, filter_size),
+            kernel_size=filter_size,
             padding='same',
             activation='relu',
             depthwise_regularizer=conv_regularizer,
@@ -59,11 +59,11 @@ class Encoder(tf.keras.models.Model):
             if self._do_projection and idx == 0:
                 # input_dimとdimが異なる場合、最初の層でlayer dropoutと
                 # residual connectionが構築できないためskipする
-                layer = tf.keras.layers.SeparableConv2D(**conv_params)
+                layer = tf.keras.layers.SeparableConv1D(**conv_params)
             else:
                 layer = LayerDropped(
                     ResidualNormed(
-                        tf.keras.layers.SeparableConv2D(**conv_params),
+                        tf.keras.layers.SeparableConv1D(**conv_params),
                         dropout_rate=dropout_rate,
                         regularizer=conv_regularizer),
                     layer_idx=layer_idx,
@@ -107,7 +107,7 @@ class Encoder(tf.keras.models.Model):
         x = self.position_encoding(x)
 
         # (batch_size, 1, N, input_dim)
-        x = tf.expand_dims(x, axis=1)
+        # x = tf.expand_dims(x, axis=1)
 
         for idx, conv in enumerate(self.conv_layers):
             # (batch_size, 1, N, dim)
@@ -119,7 +119,7 @@ class Encoder(tf.keras.models.Model):
                 x = conv(x, training=training)
 
         # (batch_size, N, dim)
-        x = tf.squeeze(x, axis=1)
+        # x = tf.squeeze(x, axis=1)
 
         # (batch_size, N, dim)
         x = self.attention([x] * 3 + [mask], training=training)
