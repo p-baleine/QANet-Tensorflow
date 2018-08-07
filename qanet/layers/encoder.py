@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from .attention import MultiHeadAttention
 from .core import PositionEncoding
-from .wrappers import ResidualNormed, LayerDropped
+from .wrappers import ResidualNormed, LayerDropped, LayerNormed
 
 class Encoder(tf.keras.models.Model):
     """Encoder
@@ -31,6 +31,7 @@ class Encoder(tf.keras.models.Model):
                  input_dim=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
+        self._layer_dropout_survival_prob = layer_dropout_survival_prob
 
         self._do_projection = input_dim is not None and input_dim != dim
         self._dropout_rate = dropout_rate
@@ -61,50 +62,71 @@ class Encoder(tf.keras.models.Model):
                 # residual connectionが構築できないためskipする
                 layer = tf.keras.layers.SeparableConv1D(**conv_params)
             else:
-                layer = LayerDropped(
-                    ResidualNormed(
-                        tf.keras.layers.SeparableConv1D(**conv_params),
-                        dropout_rate=dropout_rate,
-                        regularizer=conv_regularizer),
-                    layer_idx=layer_idx,
-                    num_total_layers=num_total_layers,
-                    p_L=layer_dropout_survival_prob)
+                # layer = LayerDropped(
+                #     ResidualNormed(
+                #         tf.keras.layers.SeparableConv1D(**conv_params),
+                #         dropout_rate=dropout_rate,
+                #         regularizer=conv_regularizer),
+                #     layer_idx=layer_idx,
+                #     num_total_layers=num_total_layers,
+                #     p_L=layer_dropout_survival_prob)
+                layer = LayerNormed(
+                    tf.keras.layers.SeparableConv1D(**conv_params),
+                    dropout_rate=dropout_rate,
+                    regularizer=conv_regularizer)
             self.conv_layers.append(layer)
             setattr(self, 'separable_conv-{}'.format(idx), layer)
             layer_idx += 1
 
         # Self-attention-layer
-        self.attention = LayerDropped(
-            ResidualNormed(
-                MultiHeadAttention(
-                    num_heads=num_heads,
-                    input_dim=dim,
-                    d_k=dim,
-                    d_v=dim,
-                    regularizer=attention_regularizer),
-                dropout_rate=dropout_rate,
+        # self.attention = LayerDropped(
+        #     ResidualNormed(
+        #         MultiHeadAttention(
+        #             num_heads=num_heads,
+        #             input_dim=dim,
+        #             d_k=dim,
+        #             d_v=dim,
+        #             regularizer=attention_regularizer),
+        #         dropout_rate=dropout_rate,
+        #         regularizer=attention_regularizer),
+        #     layer_idx=layer_idx,
+        #     num_total_layers=num_total_layers,
+        #     p_L=layer_dropout_survival_prob)
+        self.attention = LayerNormed(
+            MultiHeadAttention(
+                num_heads=num_heads,
+                input_dim=dim,
+                d_k=dim,
+                d_v=dim,
                 regularizer=attention_regularizer),
-            layer_idx=layer_idx,
-            num_total_layers=num_total_layers,
-            p_L=layer_dropout_survival_prob)
+            dropout_rate=dropout_rate,
+            regularizer=attention_regularizer)
 
         layer_idx += 1
 
         # Feed-forward-layer
-        self.feed_forward = LayerDropped(
-            ResidualNormed(
-                FeedForward(dim, ff_regularizer),
-                dropout_rate=dropout_rate,
-                regularizer=ff_regularizer),
-            layer_idx=layer_idx,
-            num_total_layers=num_total_layers,
-            p_L=layer_dropout_survival_prob)
+        # self.feed_forward = LayerDropped(
+        #     ResidualNormed(
+        #         FeedForward(dim, ff_regularizer),
+        #         dropout_rate=dropout_rate,
+        #         regularizer=ff_regularizer),
+        #     layer_idx=layer_idx,
+        #     num_total_layers=num_total_layers,
+        #     p_L=layer_dropout_survival_prob)
+        self.feed_forward = LayerNormed(
+            FeedForward(dim, ff_regularizer),
+            dropout_rate=dropout_rate,
+            regularizer=ff_regularizer)
 
     def call(self, inputs, training):
         x, mask = inputs
 
+        total_layers = len(self.conv_layers) + 2
+        layer_idx = 0
+
         # (batch_size, N, input_dim)
         x = self.position_encoding(x)
+        layer_idx += 1
 
         # (batch_size, 1, N, input_dim)
         # x = tf.expand_dims(x, axis=1)
@@ -112,22 +134,43 @@ class Encoder(tf.keras.models.Model):
         for idx, conv in enumerate(self.conv_layers):
             # (batch_size, 1, N, dim)
             if self._do_projection and idx == 0:
-                x = conv(x)
+                y = conv(x)
                 if training:
-                    x = tf.nn.dropout(x, keep_prob=1.0 - self._dropout_rate)
+                    y = tf.nn.dropout(y, keep_prob=1.0 - self._dropout_rate)
             else:
-                x = conv(x, training=training)
+                y = conv(x, training=training)
+            y = layer_dropout(x, y, layer_idx, total_layers,
+                              p_L=self._layer_dropout_survival_prob,
+                              training=training)
+            x = y
+            layer_idx += 1
 
         # (batch_size, N, dim)
         # x = tf.squeeze(x, axis=1)
 
         # (batch_size, N, dim)
-        x = self.attention([x] * 3 + [mask], training=training)
+        y = self.attention([x] * 3 + [mask], training=training)
+        y = layer_dropout(x, y, layer_idx, total_layers,
+                          p_L=self._layer_dropout_survival_prob,
+                          training=training)
+        x = y
+        layer_idx += 1
 
         # (batch_size, N, dim)
-        x = self.feed_forward(x, training=training)
+        y = self.feed_forward(x, training=training)
+        y = layer_dropout(x, y, layer_idx, total_layers,
+                          p_L=self._layer_dropout_survival_prob,
+                          training=training)
 
-        return x
+        return y
+
+def layer_dropout(x, y, layer_idx, num_total_layers, p_L, training):
+    if not training:
+        return x + y
+
+    survival_prob = 1. - (layer_idx / num_total_layers) * (1. - p_L)
+    is_decayed = tf.random_uniform([]) < (1.0 - survival_prob)
+    return tf.cond(is_decayed, lambda: x, lambda: x + y)
 
 class FeedForward(tf.keras.models.Model):
     def __init__(self,
