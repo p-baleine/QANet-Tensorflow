@@ -29,6 +29,7 @@ class Input(namedtuple('Input', [
         'context',
         'context_unk_label',
         'context_chars',
+        'raw_context_words',
         'question',
         'question_unk_label',
         'question_chars'])):
@@ -177,6 +178,7 @@ class Preprocessor(object):
             context=context_word_ids,
             context_unk_label=unk_label(context_word_ids),
             context_chars=to_char_ids(annotated_context),
+            raw_context_words=[w for w, _, _ in annotated_context],
             question=question_word_ids,
             question_unk_label=unk_label(question_word_ids),
             question_chars=to_char_ids(annotated_question))

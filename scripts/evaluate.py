@@ -89,13 +89,12 @@ def main(data, save_path, raw_data_file, use_ema):
         raw_dataset, prediction_mapping(id, starts, ends, dev_data, processor))))
 
 def prediction_mapping(id, starts, ends, data, processor):
-    context_mapping = dict((d.id, d.x.context) for d in data)
+    context_mapping = dict((d.id, d.x.raw_context_words) for d in data)
     starts, ends, _ = zip(*[get_answer_spane(s, e) for s, e in
                             zip(starts, ends)])
     return dict(
-        (id, ' '.join(processor.reverse_word_ids(
-            context_mapping[id][start:end+1])))
-         for id, start, end in zip(id, starts, ends))
+        (id, ' '.join(context_mapping[id][start:end+1]))
+        for id, start, end in zip(id, starts, ends))
 
 if __name__ == '__main__':
     main()
