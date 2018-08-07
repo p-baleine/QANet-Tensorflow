@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @click.option('--dev-data', type=click.File())
 @click.option('--glove', type=click.Path(exists=True))
 @click.option('--out', type=click.Path(exists=True))
-@click.option('--char-count-threshold', type=click.INT, default=50)
+@click.option('--char-count-threshold', type=click.INT, default=0)
 def main(train_data, dev_data, glove, out, char_count_threshold):
     logger.info('Loading glove file...')
     wv = KeyedVectors.load_word2vec_format(glove, binary=True)
