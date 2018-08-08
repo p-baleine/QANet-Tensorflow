@@ -1,7 +1,8 @@
 from collections import namedtuple
 from nltk.tokenize.regexp import RegexpTokenizer
 
-# tokenizeに使うパターン(参考: 『入門 自然言語処理』)
+# The pattern used for tokenize
+# References: 『入門 自然言語処理』
 PATTERN = r'''(?x)      # set flag to allow verbose regexps
     (?:[A-Z]\.)+        # abbreviations, e.g. U.S.A.
   | \d+\.?\d+           # digits

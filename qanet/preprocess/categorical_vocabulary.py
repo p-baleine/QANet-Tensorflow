@@ -3,8 +3,6 @@ from collections import OrderedDict
 from .utils import identity
 
 class CategoricalVocabulary(object):
-    """辞書"""
-
     PAD_ID = 0
     UNK_ID = 1
     PAD_TOKEN = '<pad>'

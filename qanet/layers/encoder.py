@@ -1,8 +1,9 @@
 import tensorflow as tf
 
 from .attention import MultiHeadAttention
-from .core import PositionEncoding
-from .wrappers import ResidualNormed, LayerDropped, LayerNormed
+from .core import FeedForward, PositionEncoding
+from .layer_utils import layer_dropout
+from .wrappers import LayerNormed
 
 class Encoder(tf.keras.models.Model):
     """Encoder
@@ -28,70 +29,32 @@ class Encoder(tf.keras.models.Model):
                  conv_regularizer=None,
                  attention_regularizer=None,
                  ff_regularizer=None,
-                 input_dim=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
         self._layer_dropout_survival_prob = layer_dropout_survival_prob
-
-        self._do_projection = input_dim is not None and input_dim != dim
         self._dropout_rate = dropout_rate
-
-        num_total_layers = num_conv_layers + 2
-        layer_idx = 0
 
         self.position_encoding = PositionEncoding()
 
         # Convolution-layer
         self.conv_layers = []
 
-        layer_idx += 1
-
-        conv_params = dict(
-            filters=dim,
-            kernel_size=filter_size,
-            padding='same',
-            activation='relu',
-            depthwise_regularizer=conv_regularizer,
-            pointwise_regularizer=conv_regularizer,
-            bias_regularizer=conv_regularizer,
-            activity_regularizer=conv_regularizer)
-
         for idx in range(num_conv_layers):
-            if self._do_projection and idx == 0:
-                # input_dimとdimが異なる場合、最初の層でlayer dropoutと
-                # residual connectionが構築できないためskipする
-                layer = tf.keras.layers.SeparableConv1D(**conv_params)
-            else:
-                # layer = LayerDropped(
-                #     ResidualNormed(
-                #         tf.keras.layers.SeparableConv1D(**conv_params),
-                #         dropout_rate=dropout_rate,
-                #         regularizer=conv_regularizer),
-                #     layer_idx=layer_idx,
-                #     num_total_layers=num_total_layers,
-                #     p_L=layer_dropout_survival_prob)
-                layer = LayerNormed(
-                    tf.keras.layers.SeparableConv1D(**conv_params),
-                    dropout_rate=dropout_rate,
-                    regularizer=conv_regularizer)
+            layer = LayerNormed(
+                tf.keras.layers.SeparableConv1D(
+                    filters=dim,
+                    kernel_size=filter_size,
+                    padding='same',
+                    activation='relu',
+                    depthwise_regularizer=conv_regularizer,
+                    pointwise_regularizer=conv_regularizer,
+                    bias_regularizer=conv_regularizer,
+                    activity_regularizer=conv_regularizer),
+                dropout_rate=dropout_rate,
+                regularizer=conv_regularizer)
             self.conv_layers.append(layer)
             setattr(self, 'separable_conv-{}'.format(idx), layer)
-            layer_idx += 1
 
-        # Self-attention-layer
-        # self.attention = LayerDropped(
-        #     ResidualNormed(
-        #         MultiHeadAttention(
-        #             num_heads=num_heads,
-        #             input_dim=dim,
-        #             d_k=dim,
-        #             d_v=dim,
-        #             regularizer=attention_regularizer),
-        #         dropout_rate=dropout_rate,
-        #         regularizer=attention_regularizer),
-        #     layer_idx=layer_idx,
-        #     num_total_layers=num_total_layers,
-        #     p_L=layer_dropout_survival_prob)
         self.attention = LayerNormed(
             MultiHeadAttention(
                 num_heads=num_heads,
@@ -102,17 +65,6 @@ class Encoder(tf.keras.models.Model):
             dropout_rate=dropout_rate,
             regularizer=attention_regularizer)
 
-        layer_idx += 1
-
-        # Feed-forward-layer
-        # self.feed_forward = LayerDropped(
-        #     ResidualNormed(
-        #         FeedForward(dim, ff_regularizer),
-        #         dropout_rate=dropout_rate,
-        #         regularizer=ff_regularizer),
-        #     layer_idx=layer_idx,
-        #     num_total_layers=num_total_layers,
-        #     p_L=layer_dropout_survival_prob)
         self.feed_forward = LayerNormed(
             FeedForward(dim, ff_regularizer),
             dropout_rate=dropout_rate,
@@ -128,25 +80,14 @@ class Encoder(tf.keras.models.Model):
         x = self.position_encoding(x)
         layer_idx += 1
 
-        # (batch_size, 1, N, input_dim)
-        # x = tf.expand_dims(x, axis=1)
-
         for idx, conv in enumerate(self.conv_layers):
-            # (batch_size, 1, N, dim)
-            if self._do_projection and idx == 0:
-                y = conv(x)
-                if training:
-                    y = tf.nn.dropout(y, keep_prob=1.0 - self._dropout_rate)
-            else:
-                y = conv(x, training=training)
+            # (batch_size, N, dim)
+            y = conv(x, training=training)
             y = layer_dropout(x, y, layer_idx, total_layers,
                               p_L=self._layer_dropout_survival_prob,
                               training=training)
             x = y
             layer_idx += 1
-
-        # (batch_size, N, dim)
-        # x = tf.squeeze(x, axis=1)
 
         # (batch_size, N, dim)
         y = self.attention([x] * 3 + [mask], training=training)
@@ -163,37 +104,3 @@ class Encoder(tf.keras.models.Model):
                           training=training)
 
         return y
-
-def layer_dropout(x, y, layer_idx, num_total_layers, p_L, training):
-    if not training:
-        return x + y
-
-    survival_prob = 1. - (layer_idx / num_total_layers) * (1. - p_L)
-    is_decayed = tf.random_uniform([]) < (1.0 - survival_prob)
-    return tf.cond(is_decayed, lambda: x, lambda: x + y)
-
-class FeedForward(tf.keras.models.Model):
-    def __init__(self,
-                 dim,
-                 regularizer,
-                 **kwargs):
-        super(FeedForward, self).__init__(**kwargs)
-
-        self.ff1 = tf.keras.layers.Dense(
-            dim,
-            activation='relu',
-            kernel_regularizer=regularizer,
-            bias_regularizer=regularizer,
-            activity_regularizer=regularizer)
-        self.ff2 = tf.keras.layers.Dense(
-            dim,
-            activation=None,
-            kernel_regularizer=regularizer,
-            bias_regularizer=regularizer,
-            activity_regularizer=regularizer)
-
-    def call(self, inputs):
-        x = self.ff1(inputs)
-        x = self.ff2(x)
-        return x
-

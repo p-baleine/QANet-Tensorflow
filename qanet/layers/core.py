@@ -117,3 +117,29 @@ class PositionPrediction(tf.keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         M_a_shape, _, _ = input_shape
         return tf.TensorShape([M_a_shape[0], M_a.shape[1]])
+
+class FeedForward(tf.keras.models.Model):
+    def __init__(self,
+                 dim,
+                 regularizer,
+                 **kwargs):
+        super(FeedForward, self).__init__(**kwargs)
+
+        self.ff1 = tf.keras.layers.Dense(
+            dim,
+            activation='relu',
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            activity_regularizer=regularizer)
+        self.ff2 = tf.keras.layers.Dense(
+            dim,
+            activation=None,
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer,
+            activity_regularizer=regularizer)
+
+    def call(self, inputs):
+        x = self.ff1(inputs)
+        x = self.ff2(x)
+        return x
+

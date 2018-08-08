@@ -12,10 +12,12 @@ from .data_utils import create_transposed_data
 logger = logging.getLogger(__name__)
 
 def load_hparams(save_path, preprocessor=None, hparams_path=None):
-    """ハイパーパラメータを読みこんで返す
-    save_path配下にファイルが存在する場合、これを読み出す
-    save_path配下にファイルが存在しない場合、
-    hparamth_pathから読み出して、且つsave_pathに保存しておく
+    """Return the loaded hyper parameters.
+
+    If there is a file under `save_path` then return this.
+    If there isn's a file under `save_path` then load hyper
+    parameters from `hparamth_path` and also save them
+    in `save_path`.
     """
 
     saved_path = os.path.join(save_path, 'hparams.json')
@@ -47,8 +49,7 @@ def load_embedding(data_path):
     return np.load(os.path.join(data_path, 'vectors.npy'))
 
 def get_answer_spane(start_preds, end_preds):
-    # FIXME 今はlogitsをそのままscoreとしているため、scoreが確率ではない
-    # 確率が欲しい場合はsoftmaxする必要がある
+    # FIXME If probabilities are needed, then we have to do softmax.
     best_score = 0.0
     best_start_idx = 0
     best_span = (0, 1)
@@ -69,8 +70,6 @@ def get_answer_spane(start_preds, end_preds):
     return best_span[0], best_span[1], best_score
 
 def create_iterator(data, hparams, do_shuffle, repeat_count=None):
-    """dataからtf.data.Iteratorと初期化に必要なfeed_dictを作って返す"""
-
     id, title, inputs, labels = create_transposed_data(
         data,
         max_context_length=hparams.max_context_length,

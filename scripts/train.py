@@ -1,7 +1,7 @@
 """
-学習する
+Training.
 
-動かし方:
+Usage:
 
   python -m scripts.train \
     --data /path/to/preprocessed_data_dir \
@@ -70,6 +70,7 @@ def main(data, hparams, save_path):
         model, train_inputs, train_labels, training=True)
 
     if hparams.l2_regularizer_scale is not None:
+        # Apply l2 regularization.
         variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         l2_loss = tf.contrib.layers.apply_regularization(
             model.regularizer, variables)
@@ -116,38 +117,15 @@ def main(data, hparams, save_path):
         train_iterator, train_feed_dict,
         dev_iterator, dev_feed_dict)
 
-    total_params()
-
     with monitored_session(save_path, scaffold, hooks=hooks) as sess:
         while not sess.should_stop():
-            _p1, _p2 = train_labels
-            context, question, p1, p2, S, _, _ = sess.run([train_inputs.context_mask, train_inputs.question, _p1, _p2, model._S, train_op, merged])
-
-            # print('aaaaa')
-            # for x in S.tolist():
-            #     print(x)
-            # print()
-            # print('context', context)
-            # print('question', question)
-            # print('p1', p1)
-            # print('p2', p2)
+            sess.run([train_op, merged])
 
 def get_scheduled_learning_rate(hparams, global_step):
     return tf.minimum(
         hparams.learning_rate,
         0.001 / tf.log(tf.cast(hparams.warmup_steps - 1, tf.float32))
         * tf.log(tf.cast(global_step, tf.float32) + 1))
-
-def total_params():
-    total_parameters = 0
-    for variable in tf.trainable_variables():
-        print(variable)
-        shape = variable.get_shape()
-        variable_parametes = 1
-        for dim in shape:
-            variable_parametes *= dim.value
-        total_parameters += variable_parametes
-    print("Total number of trainable parameters: {}".format(total_parameters))
 
 if __name__ == '__main__':
     main()

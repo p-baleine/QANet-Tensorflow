@@ -1,12 +1,12 @@
 """
-学習済モデルを評価する
+Evaluate by SQuAD's script.
 
-動かし方:
+Usage:
 
   python -m scripts.evaluate \
     --data /path/to/data \
     --raw-data-file /path/to/raw/squad/data/file \
-    --save-path /path/to/save_dir \
+    --save-path /path/to/save_dir
 """
 
 import click
@@ -14,7 +14,7 @@ import json
 import logging
 import numpy as np
 import os
-import sys
+import ssy
 import tensorflow as tf
 
 sys.path.append(os.path.join(
@@ -83,7 +83,7 @@ def main(data, save_path, raw_data_file, use_ema):
             starts += start.tolist()
             ends += end.tolist()
 
-    # TODO ファイル名指定しなくてもrestoreできるようにする
+    # TODO Restore without the filename.
     processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
     raw_dataset = json.load(raw_data_file)['data']
 

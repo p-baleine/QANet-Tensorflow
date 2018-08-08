@@ -24,15 +24,12 @@ def create_transposed_data(
         max_context_length,
         max_question_length,
         max_word_length):
-    """学習用に加工したデータを返す
-
-    qanet.preprocess.TransformedOutput形式のdataを処理する
-    max_context_lengthよりcontextが長いデータは除外される
-    max_question_lengthよりquestionが長いデータは除外される
+    """Converte `raw_data` for training.
     """
+
     valid_data = []
 
-    # contextとquestionが閾値を越えていた場合これを除く
+    # Exclude a datum which has a longer context or question.
     for datum in raw_data:
         if len(datum.x.context) > max_context_length:
             logger.warn('Take away datum due to too long context'
@@ -49,7 +46,7 @@ def create_transposed_data(
     logger.info('{} data filtered, total data size: {}'.format(
         len(raw_data) - len(valid_data), len(valid_data)))
 
-    # `x`をパディング
+    # Padding `x`.
     valid_data = [d._replace(
         x=pad_input(d.x,
                     max_context_length=max_context_length,
@@ -58,7 +55,7 @@ def create_transposed_data(
 
     id, title, x, y = list(zip(*valid_data))
 
-    # 学習時には答えの先頭要素のみを用いる
+    # Use only first element of answers on training.
     y = [(y_[0].answer_start, y_[0].answer_end) for y_ in y]
 
     return (
@@ -72,21 +69,9 @@ def pad_input(datum,
               max_question_length,
               max_word_length,
               pad_id=CategoricalVocabulary.PAD_ID):
-    """datumのpaddingを行う
-    datumはqanet.preprocess.Inputの形式を期待する
-
-    max_context_length分datum.contextとdatum.context_unk_label、
-    datum.context_charsにpaddingを行う
-    max_context_lengthを越える長さを持っている場合エラーを投げる
-
-    max_question_length分datum.questionとdatum.question_unk_label、
-    datum.question_charsにpaddingを行う
-    max_question_lengthを越える長さを持っている場合エラーを投げる
-
-    datum.context_chars、datum.question_chars共に
-    max_word_length分paddingを行う
-    max_word_lengthを越えた要素は切り詰められる
+    """Padding `datum`
     """
+
     def pad(x, max_length):
         return np.array(x[:max_length] + [pad_id] * (max_length - len(x)))
 

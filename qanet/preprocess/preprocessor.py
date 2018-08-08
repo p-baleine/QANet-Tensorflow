@@ -50,7 +50,8 @@ class Label(namedtuple('Label', [
         return Label(*arr)
 
 class Preprocessor(object):
-    """ExpandedArticleのデータの変換を行う"""
+    """Preprocess `ExpandedArticle`.
+    """
 
     def __init__(self, word2vec, annotate, normalize=identity,
                  char_count_threshold=0):
@@ -62,8 +63,9 @@ class Preprocessor(object):
         self._char_count_threshold = char_count_threshold
 
     def fit(self, articles):
-        """articlesのcontextとquestionから辞書を学習する
-        また、辞書のエントリーに対応するword2vecのvectorを記憶しておく
+        """Fit words from the context and question in `articles`.
+        Also save vectors which correspond to learned
+        dictionary's entries.
         """
         for article in articles:
             sentences = [article.context, article.question]
@@ -72,7 +74,8 @@ class Preprocessor(object):
                 for c in list(w):
                     self._char_dict.add(c)
 
-        # word2vecのvectorを取り出す
+
+        # Retrieve vectors from word2vec.
         self._vectors = np.zeros(
             (len(self._word_dict), self._word2vec.vector_size))
 
@@ -84,7 +87,7 @@ class Preprocessor(object):
                 self._vectors[id] = self._word2vec[word]
             else:
                 logger.warn('glove dose not contain word "{}"'.format(word))
-                # word2vec側になかったらunkにする
+                # Make a ward that dose not exist in word2vec.
                 self._word_dict.move_to_unk(word)
 
         logger.info('Triming character vocabulary by min frequency {}'.format(
@@ -95,8 +98,6 @@ class Preprocessor(object):
         self._word_dict.freeze()
 
     def transform(self, data):
-        """dataの各要素をTransformedOutputに変換したリストを返す
-        """
         output = []
 
         for datum in data:
@@ -107,7 +108,7 @@ class Preprocessor(object):
             y_list = self._transform_label(annotated_context, answers)
 
             if len(y_list) == 0:
-                # 答えが無かったら無視
+                # Ignore the qas if it dose not have any answers.
                 logger.warn('The question dose not have answers, '
                             'article_title: {}, id: {}'.format(title, id))
                 continue
@@ -126,8 +127,6 @@ class Preprocessor(object):
 
     @property
     def vectors(self):
-        """fitの過程で得られた辞書に対応するword2vecのvector
-        """
         return self._vectors
 
     @property

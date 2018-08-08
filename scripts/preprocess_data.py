@@ -1,7 +1,7 @@
 """
-SQuADの{train,dev}.jsonから辞書と単語IDに変換したデータを作成して保存する
+Preprocess SQuAD's {train,dev}.json files.
 
-動かし方:
+Usage:
 
   python -m scripts.preprocess_data \
     --train-data /path/to/train.json \

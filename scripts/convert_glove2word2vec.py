@@ -1,8 +1,8 @@
 """
-gloveファイルをword2vecフォーマットに変換して保存する
-速度向上のためbinaryにて保存する
+Convert the glove file to word2vec format and save it.
+Save it with binary to speed up the loading time.
 
-動かし方:
+Usage:
   python -m scripts.convert_glove2word2vec \
     /path/to/glove.X.Y.txt \
     /path/to/save

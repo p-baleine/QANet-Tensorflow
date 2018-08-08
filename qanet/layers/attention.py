@@ -27,7 +27,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                  q_initializer=tf.contrib.layers.xavier_initializer(),
                  k_initializer=tf.contrib.layers.xavier_initializer(),
                  v_initializer=tf.contrib.layers.xavier_initializer(),
-                 # o_initializer=tf.contrib.layers.xavier_initializer(),
                  regularizer=None,
                  **kwargs):
         self._num_heads = num_heads
@@ -37,7 +36,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._q_initializer = q_initializer
         self._k_initializer = k_initializer
         self._v_initializer = v_initializer
-        # self._o_initializer = o_initializer
         self._regularizer = regularizer
         super(MultiHeadAttention, self).__init__(**kwargs)
 
@@ -57,12 +55,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             [self._input_dim, self._d_v],
             initializer=self._v_initializer,
             regularizer=self._regularizer)
-        # self._W_O = self.add_variable(
-        #     'W_O',
-        #     [self._d_v, self._input_dim],
-        #     initializer=self._o_initializer,
-        #     regularizer=self._regularizer)
-
         return super(MultiHeadAttention, self).build(input_shape)
 
     def call(self, x):
@@ -84,8 +76,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x = dot_product_attention(q_W_Q, k_W_K, v_W_V, mask)
         # (batch_size, length, d_v)
         x = combine_heads(x)
-        # (batch_size, length, input_dim)
-        # return tf.tensordot(x, self._W_O, [[2], [0]])
+
         return x
 
     def compute_output_shape(self, input_shape):
@@ -158,68 +149,7 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
         # (batch_size, N, M)
         logits = tf.transpose(part1 + part2 + part3, [0, 2, 1])
 
-        # logitsと同じ形のmaskを作る
-        # (batch_size, N, M)
-        c_mask = tf.cast(tf.tile(tf.expand_dims(c_mask, 2), [1, 1, M]), tf.bool)
-        q_mask = tf.cast(tf.tile(tf.expand_dims(q_mask, 1), [1, N, 1]), tf.bool)
-
         return logits
-        # return exp_mask(logits, c_mask & q_mask)
-
-    def compute_output_shape(self, input_shape):
-        c_shape, q_shape, _, _ = input_shape
-        return tf.TensorShape([
-            c_shape[0], c_shape[1], q_shape[1]])
-
-class ContextQueryAttention(tf.keras.layers.Lambda):
-    """context-to-query attention
-
-    Input:
-      S_r: (batch_size, N, M)
-          similarity-matrixを行方向にsoftmaxしたもの
-      query: (batch_size, M, dim)
-
-    Output: (batch_size, N, dim)
-    """
-
-    def __init__(self, **kwargs):
-        def fn(x):
-            S_r, q = x
-            return tf.matmul(S_r, q)
-
-        super(ContextQueryAttention, self).__init__(
-            function=fn, **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        d = input_shape[1][-1]
-        N = input_shape[0][1]
-        return tf.TensorShape([input_shape[0][0], N, d])
-
-class QueryContextAttention(tf.keras.layers.Lambda):
-    """query-to-context attention
-
-    Input:
-      S_r: (batch_size, N, M)
-          similarity-matrixを行方向にsoftmaxしたもの
-      S_c: (batch_size, N, M)
-          similarity-matrixを列方向にsoftmaxしたもの
-      context: (batch_size, N, dim)
-
-    Output: (batch_size, N, dim)
-    """
-
-    def __init__(self, **kwargs):
-        def fn(x):
-            S_r, S_c, c = x
-            return tf.matmul(tf.matmul(S_r, S_c, transpose_b=True), c)
-
-        super(QueryContextAttention, self).__init__(
-            function=fn, **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        d = input_shape[2][-1]
-        N = input_shape[0][1]
-        return tf.TensorShape([input_shape[0][0], N, d])
 
 def dot_product_attention(Q, K, V, mask):
     d_k = tf.cast(tf.shape(K)[-1], tf.float32)

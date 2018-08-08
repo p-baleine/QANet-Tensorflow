@@ -133,11 +133,8 @@ class CharacterEmbedding(tf.keras.layers.Layer):
             x_ = tf.nn.embedding_lookup(self._embedding, x)
         # (batch_size * N, W, p2)
         x_ = tf.reshape(x_, [-1, W, self._emb_dim])
-        # (batch_size * N, 1, W, p2)
-        # x_ = tf.expand_dims(x_, 1)
-        # (batch_size * N, 1, W - filter_size + 1, p2)
+        # (batch_size * N, W - filter_size + 1, p2)
         x_ = tf.nn.conv1d(x_, self._kernel, 1, 'VALID') + self._bias
-        print('aaa', x_)
         # (batch_size, N, W - filter_size + 1, p2)
         x_ = tf.reshape(x_, [-1, N, W - self._filter_size + 1, self._out_dim])
         # (batch_size, N, p2)
