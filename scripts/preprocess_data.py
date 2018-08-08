@@ -48,7 +48,7 @@ def main(train_data, dev_data, glove, out, char_count_threshold):
         char_count_threshold=char_count_threshold)
 
     logger.info('Fitting preprocessor...')
-    processor.fit(train_data)
+    processor.fit(train_data + dev_data)
 
     logger.info('Vocabulary size of words: {}'.format(
         len(processor.word_dict)))
