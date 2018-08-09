@@ -14,7 +14,7 @@ import json
 import logging
 import numpy as np
 import os
-import ssy
+import sys
 import tensorflow as tf
 
 sys.path.append(os.path.join(
