@@ -69,11 +69,19 @@ def get_answer_spane(start_preds, end_preds):
 
     return best_span[0], best_span[1], best_score
 
-def create_iterator(data, hparams, do_shuffle, repeat_count=None):
+def create_iterator(data, hparams, do_shuffle, repeat_count=None,
+                    remove_longer_data=True):
+    if remove_longer_data:
+        max_context_length = hparams.max_context_length
+        max_question_length = hparams.max_question_length
+    else:
+        max_context_length = 1e4
+        max_question_length = 1e4
+
     id, title, inputs, labels = create_transposed_data(
         data,
-        max_context_length=hparams.max_context_length,
-        max_question_length=hparams.max_question_length,
+        max_context_length=max_context_length,
+        max_question_length=max_question_length,
         max_word_length=hparams.max_word_length)
 
     # Create iterator.

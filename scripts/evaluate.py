@@ -14,7 +14,7 @@ import json
 import logging
 import numpy as np
 import os
-import ssy
+import sys
 import tensorflow as tf
 
 sys.path.append(os.path.join(
@@ -53,7 +53,8 @@ def main(data, save_path, raw_data_file, use_ema):
     embedding = load_embedding(data)
 
     id, _, iterator, feed_dict = create_iterator(
-        dev_data, hparams, do_shuffle=False, repeat_count=None)
+        dev_data, hparams, do_shuffle=False, repeat_count=None,
+        remove_longer_data=False)
     inputs, _ = iterator.get_next()
 
     logger.info('Preparing model...')
