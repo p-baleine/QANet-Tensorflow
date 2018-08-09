@@ -27,7 +27,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                  q_initializer=tf.contrib.layers.xavier_initializer(),
                  k_initializer=tf.contrib.layers.xavier_initializer(),
                  v_initializer=tf.contrib.layers.xavier_initializer(),
-                 o_initializer=tf.contrib.layers.xavier_initializer(),
                  regularizer=None,
                  **kwargs):
         self._num_heads = num_heads
@@ -37,7 +36,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self._q_initializer = q_initializer
         self._k_initializer = k_initializer
         self._v_initializer = v_initializer
-        self._o_initializer = o_initializer
         self._regularizer = regularizer
         super(MultiHeadAttention, self).__init__(**kwargs)
 
@@ -57,12 +55,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
             [self._input_dim, self._d_v],
             initializer=self._v_initializer,
             regularizer=self._regularizer)
-        self._W_O = self.add_variable(
-            'W_O',
-            [self._d_v, self._input_dim],
-            initializer=self._o_initializer,
-            regularizer=self._regularizer)
-
         return super(MultiHeadAttention, self).build(input_shape)
 
     def call(self, x):
@@ -84,8 +76,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x = dot_product_attention(q_W_Q, k_W_K, v_W_V, mask)
         # (batch_size, length, d_v)
         x = combine_heads(x)
-        # (batch_size, length, input_dim)
-        return tf.tensordot(x, self._W_O, [[2], [0]])
+
+        return x
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
@@ -113,9 +105,19 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
     def build(self, input_shape):
         c_shape, _, _, _ = input_shape
 
-        self._W = self.add_variable(
-            'weight',
-            [c_shape[-1] * 3, 1],
+        self._W1 = self.add_variable(
+            'weight1',
+            [c_shape[-1], 1],
+            initializer=self._initializer,
+            regularizer=self._regularizer)
+        self._W2 = self.add_variable(
+            'weight2',
+            [c_shape[-1], 1],
+            initializer=self._initializer,
+            regularizer=self._regularizer)
+        self._W3 = self.add_variable(
+            'weight3',
+            [1, 1, c_shape[-1]],
             initializer=self._initializer,
             regularizer=self._regularizer)
 
@@ -123,87 +125,38 @@ class SimilarityMaxtirx(tf.keras.layers.Layer):
 
     def call(self, x):
         c, q, c_mask, q_mask = x
-        N, M, d = c.shape[1], q.shape[1], c.shape[-1]
+        N, M, d = tf.shape(c)[1], tf.shape(q)[1], tf.shape(c)[-1]
 
-        # (batch_size, N, M, d)
-        c = tf.tile(tf.expand_dims(c, 2), [1, 1, M, 1])
-        q = tf.tile(tf.expand_dims(q, 1), [1, N, 1, 1])
-        # (batch_size, N * M, d)
-        c = tf.reshape(c, [-1, N * M, d])
-        q = tf.reshape(q, [-1, N * M, d])
-        c_q = c * q
-        # (batch_size, N * M, d * 3)
-        S = tf.concat([c, q, c_q], 2)
+        # (batch_size * N, d)
+        c_reshape = tf.reshape(c, [-1, d])
+        # (batch_size * M, d)
+        q_reshape = tf.reshape(q, [-1, d])
+
+        # (batch_size, N)
+        part1 = tf.reshape(tf.matmul(c_reshape, self._W1), [-1, N])
+        # (batch_size, M, N)
+        part1 = tf.tile(tf.expand_dims(part1, 1), [1, M, 1])
+        # (batch_size, M)
+        part2 = tf.reshape(tf.matmul(q_reshape, self._W2), [-1, M])
+        # (batch_size, M, N)
+        part2 = tf.tile(tf.expand_dims(part2, 2), [1, 1, N])
+
+        # (batch_size, M, d)
+        q_W3 = q * self._W3
+        # (batch_size, M, N)
+        part3 = tf.matmul(q_W3, tf.transpose(c, [0, 2, 1]))
+
         # (batch_size, N, M)
-        logits = tf.reshape(tf.tensordot(S, self._W, [[2], [0]]), [-1, N, M])
+        logits = tf.transpose(part1 + part2 + part3, [0, 2, 1])
 
-        # logitsと同じ形のmaskを作る
-        # (batch_size, N, M)
-        c_mask = tf.cast(tf.tile(tf.expand_dims(c_mask, 2), [1, 1, M]), tf.bool)
-        q_mask = tf.cast(tf.tile(tf.expand_dims(q_mask, 1), [1, N, 1]), tf.bool)
-
-        return exp_mask(logits, c_mask & q_mask)
-
-    def compute_output_shape(self, input_shape):
-        c_shape, q_shape, _, _ = input_shape
-        return tf.TensorShape([
-            c_shape[0], c_shape[1], q_shape[1]])
-
-class ContextQueryAttention(tf.keras.layers.Lambda):
-    """context-to-query attention
-
-    Input:
-      S_r: (batch_size, N, M)
-          similarity-matrixを行方向にsoftmaxしたもの
-      query: (batch_size, M, dim)
-
-    Output: (batch_size, N, dim)
-    """
-
-    def __init__(self, **kwargs):
-        def fn(x):
-            S_r, q = x
-            return tf.matmul(S_r, q)
-
-        super(ContextQueryAttention, self).__init__(
-            function=fn, **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        d = input_shape[1][-1]
-        N = input_shape[0][1]
-        return tf.TensorShape([input_shape[0][0], N, d])
-
-class QueryContextAttention(tf.keras.layers.Lambda):
-    """query-to-context attention
-
-    Input:
-      S_r: (batch_size, N, M)
-          similarity-matrixを行方向にsoftmaxしたもの
-      S_c: (batch_size, N, M)
-          similarity-matrixを列方向にsoftmaxしたもの
-      context: (batch_size, N, dim)
-
-    Output: (batch_size, N, dim)
-    """
-
-    def __init__(self, **kwargs):
-        def fn(x):
-            S_r, S_c, c = x
-            return tf.matmul(tf.matmul(S_r, S_c, transpose_b=True), c)
-
-        super(QueryContextAttention, self).__init__(
-            function=fn, **kwargs)
-
-    def compute_output_shape(self, input_shape):
-        d = input_shape[2][-1]
-        N = input_shape[0][1]
-        return tf.TensorShape([input_shape[0][0], N, d])
+        return logits
 
 def dot_product_attention(Q, K, V, mask):
-    d_k = tf.cast(K.shape[-1], tf.float32)
+    d_k = tf.cast(tf.shape(K)[-1], tf.float32)
     QK = tf.matmul(Q, K, transpose_b=True)
-    mask = tf.reshape(mask, [-1, 1, 1, QK.shape[-1]])
-    return tf.matmul(tf.nn.softmax(exp_mask(QK, mask) / tf.sqrt(d_k)), V)
+    mask = tf.reshape(mask, [-1, 1, 1, tf.shape(QK)[-1]])
+    weights = tf.nn.softmax(exp_mask(QK, mask))
+    return tf.matmul(weights / tf.sqrt(d_k), V)
 
 def split_heads(x, num_heads):
     """xの最後の次元をnum_headsに分ける
@@ -212,10 +165,9 @@ def split_heads(x, num_heads):
       x: (batch_size, length, num_heads * dim)
     戻り値: (batch_size, num_heads, length, dim)
     """
-    shape = x.shape.as_list()
+    shape = tf.shape(x)
     # (batch_size, length, num_heads, dim)
-    splitted = tf.reshape(
-        x, [-1] + shape[1:-1] + [num_heads, shape[-1] // num_heads])
+    splitted = tf.reshape(x, [-1, shape[1], num_heads, shape[-1] // num_heads])
     # (batch_size, num_heads, length, dim)
     return tf.transpose(splitted, [0, 2, 1, 3])
 
@@ -227,5 +179,5 @@ def combine_heads(x):
     戻り値: (batch_size, length, num_heads * d_v)
     """
     x = tf.transpose(x, [0, 2, 1, 3])
-    shape = x.shape.as_list()
-    return tf.reshape(x, [-1] + shape[1:-2] + [shape[-2] * shape[-1]])
+    shape = tf.shape(x)
+    return tf.reshape(x, [-1, shape[1], shape[-2] * shape[-1]])

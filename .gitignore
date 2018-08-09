@@ -9,6 +9,12 @@ notebooks/memo/*
 notebooks/old/logs/*/events.out.tfevents.*
 notebooks/old/logs/*/weights.*
 
+notebooks/logs/*/model.ckpt*
+notebooks/logs/*/graph.pbtxt
+notebooks/logs/*/checkpoint
+notebooks/logs/*/events.out.tfevents.*
+notebooks/logs/*/train.log
+
 !hparams/default.json
 !.gitkeep
 

@@ -1,7 +1,7 @@
 """
-学習する
+Training.
 
-動かし方:
+Usage:
 
   python -m scripts.train \
     --data /path/to/preprocessed_data_dir \
@@ -70,6 +70,7 @@ def main(data, hparams, save_path):
         model, train_inputs, train_labels, training=True)
 
     if hparams.l2_regularizer_scale is not None:
+        # Apply l2 regularization.
         variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         l2_loss = tf.contrib.layers.apply_regularization(
             model.regularizer, variables)

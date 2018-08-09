@@ -1,12 +1,12 @@
 """
-学習済モデルを評価する
+Evaluate by SQuAD's script.
 
-動かし方:
+Usage:
 
   python -m scripts.evaluate \
     --data /path/to/data \
     --raw-data-file /path/to/raw/squad/data/file \
-    --save-path /path/to/save_dir \
+    --save-path /path/to/save_dir
 """
 
 import click
@@ -28,6 +28,8 @@ from qanet.model_utils import DatasetInitializerHook
 from qanet.model_utils import create_iterator, get_answer_spane
 from qanet.model_utils import load_data, load_embedding, load_hparams
 from qanet.model_utils import monitored_session
+from qanet.preprocess import annotate
+from qanet.preprocess import expand_article
 from qanet.preprocess import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -51,7 +53,8 @@ def main(data, save_path, raw_data_file, use_ema):
     embedding = load_embedding(data)
 
     id, _, iterator, feed_dict = create_iterator(
-        dev_data, hparams, do_shuffle=False, repeat_count=None)
+        dev_data, hparams, do_shuffle=False, repeat_count=None,
+        remove_longer_data=False)
     inputs, _ = iterator.get_next()
 
     logger.info('Preparing model...')
@@ -81,21 +84,29 @@ def main(data, save_path, raw_data_file, use_ema):
             starts += start.tolist()
             ends += end.tolist()
 
-    # TODO ファイル名指定しなくてもrestoreできるようにする
+    # TODO Restore without the filename.
     processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
     raw_dataset = json.load(raw_data_file)['data']
 
     print(json.dumps(squad.evaluate(
-        raw_dataset, prediction_mapping(id, starts, ends, dev_data, processor))))
+        raw_dataset, prediction_mapping(
+            id, starts, ends, raw_dataset, processor))))
 
-def prediction_mapping(id, starts, ends, data, processor):
-    context_mapping = dict((d.id, d.x.context) for d in data)
+def prediction_mapping(id, starts, ends, raw_data, processor):
+    data = sum([expand_article(a) for a in raw_data], [])
+    context_mapping = dict((d.id, (d.context, annotate(d.context)))
+                           for d in data)
     starts, ends, _ = zip(*[get_answer_spane(s, e) for s, e in
                             zip(starts, ends)])
-    return dict(
-        (id, ' '.join(processor.reverse_word_ids(
-            context_mapping[id][start:end+1])))
-         for id, start, end in zip(id, starts, ends))
+    prediction_mapping = {}
+
+    for id, start, end in zip(id, starts, ends):
+        context, annotated_context = context_mapping[id]
+        offset_begin = annotated_context[start].offset_begin
+        offset_end = annotated_context[end].offset_end
+        prediction_mapping[id] = context[offset_begin:offset_end+1]
+
+    return prediction_mapping
 
 if __name__ == '__main__':
     main()

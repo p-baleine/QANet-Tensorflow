@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-class ResidualNormed(tf.keras.layers.Wrapper):
+class LayerNormed(tf.keras.layers.Wrapper):
     def __init__(self,
                  layer,
                  epsilon=1e-6,
@@ -10,7 +10,7 @@ class ResidualNormed(tf.keras.layers.Wrapper):
         self._epsilon = epsilon
         self._regularizer = regularizer
         self._dropout_rate = dropout_rate
-        super(ResidualNormed, self).__init__(layer, **kwargs)
+        super(LayerNormed, self).__init__(layer, **kwargs)
 
     def build(self, input_shape):
         if type(input_shape) is list:
@@ -32,7 +32,7 @@ class ResidualNormed(tf.keras.layers.Wrapper):
 
         self.layer.build(input_shape)
 
-        super(ResidualNormed, self).build()
+        super(LayerNormed, self).build()
 
     def call(self, inputs, training):
         x = inputs[0] if type(inputs) is list else inputs
@@ -50,30 +50,7 @@ class ResidualNormed(tf.keras.layers.Wrapper):
         if training:
             output = tf.nn.dropout(output, keep_prob=1.0 - self._dropout_rate)
 
-        return output + x
-
-    def compute_output_shape(self, input_shape):
-        return input_shape
-
-class LayerDropped(tf.keras.layers.Wrapper):
-    def __init__(self, layer, layer_idx, num_total_layers, p_L, **kwargs):
-        self._survival_prob = 1. - (layer_idx / num_total_layers) * (1. - p_L)
-        super(LayerDropped, self).__init__(layer, **kwargs)
-
-    def build(self, input_shape):
-        self.layer.build(input_shape)
-        super(LayerDropped, self).build()
-
-    def call(self, inputs, training):
-        output = self.layer.call(inputs, training=training)
-        inputs = inputs[0] if type(inputs) is list else inputs
-
-        if not training:
-            return output
-
-        is_decayed = tf.random_uniform([]) < (1.0 - self._survival_prob)
-
-        return tf.cond(is_decayed, lambda: inputs, lambda: output)
+        return output
 
     def compute_output_shape(self, input_shape):
         return input_shape

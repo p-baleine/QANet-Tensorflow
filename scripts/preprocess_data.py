@@ -1,7 +1,7 @@
 """
-SQuADの{train,dev}.jsonから辞書と単語IDに変換したデータを作成して保存する
+Preprocess SQuAD's {train,dev}.json files.
 
-動かし方:
+Usage:
 
   python -m scripts.preprocess_data \
     --train-data /path/to/train.json \
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @click.option('--dev-data', type=click.File())
 @click.option('--glove', type=click.Path(exists=True))
 @click.option('--out', type=click.Path(exists=True))
-@click.option('--char-count-threshold', type=click.INT, default=50)
+@click.option('--char-count-threshold', type=click.INT, default=0)
 def main(train_data, dev_data, glove, out, char_count_threshold):
     logger.info('Loading glove file...')
     wv = KeyedVectors.load_word2vec_format(glove, binary=True)
@@ -48,7 +48,7 @@ def main(train_data, dev_data, glove, out, char_count_threshold):
         char_count_threshold=char_count_threshold)
 
     logger.info('Fitting preprocessor...')
-    processor.fit(train_data)
+    processor.fit(train_data + dev_data)
 
     logger.info('Vocabulary size of words: {}'.format(
         len(processor.word_dict)))

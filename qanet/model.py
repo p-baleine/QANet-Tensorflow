@@ -2,18 +2,17 @@ import numpy as np
 import tensorflow as tf
 
 from .layers.attention import SimilarityMaxtirx
-from .layers.attention import ContextQueryAttention, QueryContextAttention
 from .layers.core import HighwayNetwork, PositionPrediction
 from .layers.embeddings import WordEmbedding, CharacterEmbedding
 from .layers.encoder import Encoder
+from .layers.layer_utils import exp_mask
 
 class QANet(tf.keras.Model):
     def __init__(self, embedding_matrix, hparams, **kwargs):
         super(QANet, self).__init__(**kwargs)
 
         self.dim = hparams.dim
-        self.N = hparams.max_context_length
-        self.M = hparams.max_question_length
+        self.W = hparams.max_word_length
         self.word_dropout_rate = hparams.word_dropout_rate
         self.char_dropout_rate = hparams.char_dropout_rate
         self.dropout_rate = hparams.dropout_rate
@@ -32,21 +31,18 @@ class QANet(tf.keras.Model):
             filter_size=hparams.char_conv_filter_size,
             regularizer=self._regularizer)
 
+        self.embedding_encoder_projection = tf.keras.layers.Conv1D(
+            filters=hparams.dim,
+            kernel_size=1,
+            padding='same',
+            use_bias=False,
+            kernel_regularizer=self._regularizer,
+            bias_regularizer=self._regularizer)
+
         self.highway_network = HighwayNetwork(
             hparams.highway_num_layers,
             regularizer=self._regularizer,
             dropout_rate=hparams.dropout_rate)
-
-        # the input of this layer is a vector of dimension
-        # p1 + p2 = 500 for each individual word, which is immediately
-        # mapped to d = 128 by a one-dimensional convolution.
-        self.embedding_encoder_projection = tf.keras.layers.Conv2D(
-            filters=hparams.dim,
-            kernel_size=(1, 1),
-            padding='same',
-            activation='relu',
-            kernel_regularizer=self._regularizer,
-            bias_regularizer=self._regularizer)
 
         self.embedding_encoder = Encoder(
             dim=hparams.dim,
@@ -60,14 +56,12 @@ class QANet(tf.keras.Model):
             ff_regularizer=self._regularizer)
 
         self.similarity_matrix = SimilarityMaxtirx(regularizer=self._regularizer)
-        self.context_query_attention = ContextQueryAttention()
-        self.query_context_attention = QueryContextAttention()
 
-        self.model_encoder_projection = tf.keras.layers.Conv2D(
+        self.model_encoder_projection = tf.keras.layers.Conv1D(
             filters=hparams.dim,
-            kernel_size=(1, 1),
+            kernel_size=1,
             padding='same',
-            activation='relu',
+            use_bias=False,
             kernel_regularizer=self._regularizer,
             bias_regularizer=self._regularizer)
 
@@ -96,10 +90,11 @@ class QANet(tf.keras.Model):
             regularizer=self._regularizer)
 
     def call(self, inputs, training):
-        in_context, in_context_unk_label,\
+        N, M, in_context, in_context_unk_label,\
             in_context_chars, in_context_mask,\
             in_question, in_question_unk_label,\
-            in_question_chars, in_question_mask = inputs
+            in_question_chars, in_question_mask = self.truncate_inputs(
+                inputs, self.W)
 
         # Input Embedding Layer.
 
@@ -122,24 +117,15 @@ class QANet(tf.keras.Model):
         context = tf.concat([context_emb, context_char_emb], axis=2)
         question = tf.concat([question_emb, question_char_emb], axis=2)
 
+        # (batch_size, N, out_dim)
+        context = self.embedding_encoder_projection(context)
+        # (batch_size, M, out_dim)
+        question = self.embedding_encoder_projection(question)
         context = self.highway_network(context, training=training)
         question = self.highway_network(question, training=training)
 
         # Embedding Encoder Layer.
 
-        # (batch_size, 1, N, input_dim)
-        context = tf.expand_dims(context, axis=1)
-        # (batch_size, 1, M, input_dim)
-        question = tf.expand_dims(question, axis=1)
-        # (batch_size, 1, N, out_dim)
-        context = self.embedding_encoder_projection(context)
-        # (batch_size, 1, M, out_dim)
-        question = self.embedding_encoder_projection(question)
-        # (batch_size, N, out_dim)
-        context = tf.reshape(context, [-1, self.N, self.dim])
-        # (batch_size, M, out_dim)
-        question = tf.reshape(question, [-1, self.M, self.dim])
-        # (batch_size, N, out_dim)
         context = self.embedding_encoder(
             (context, in_context_mask), training=training)
         # (batch_size, M, out_dim)
@@ -148,14 +134,16 @@ class QANet(tf.keras.Model):
 
         # Context-Query Attention Layer.
 
+        # (batch_size, N, M)
         S = self.similarity_matrix(
             (context, question, in_context_mask, in_question_mask))
-        S_r = tf.nn.softmax(S, 2)
-        S_c = tf.nn.softmax(S, 1)
+        S_r = tf.nn.softmax(exp_mask(S, tf.expand_dims(in_question_mask, 1)), 2)
+        S_c = tf.nn.softmax(exp_mask(S, tf.expand_dims(in_context_mask, 2)), 1)
+
         # (batch_size, N, dim)
-        A = self.context_query_attention((S_r, question))
+        A = tf.matmul(S_r, question)
         # (batch_size, N, dim)
-        B = self.query_context_attention((S_r, S_c, context))
+        B = tf.matmul(tf.matmul(S_r, tf.transpose(S_c, [0, 2, 1])), context)
 
         # Model Encoder Layer.
 
@@ -167,12 +155,8 @@ class QANet(tf.keras.Model):
             context * B
         ], axis=2)
 
-        # (batch_size, 1, N, dim * 4)
-        x = tf.expand_dims(x, axis=1)
-        # (batch_size, 1, N, dim)
-        x = self.model_encoder_projection(x)
         # (batch_size, N, dim)
-        x = tf.reshape(x, [-1, self.N, self.dim])
+        x = self.model_encoder_projection(x)
 
         M_0 = self._multiple_encoder_block(
             x, in_context_mask, training=training)
@@ -185,10 +169,6 @@ class QANet(tf.keras.Model):
 
         p_1 = self.position_prediction1((M_0, M_1, in_context_mask))
         p_2 = self.porision_prediction2((M_0, M_2, in_context_mask))
-
-        if training:
-            p_1 = tf.nn.dropout(p_1, 1.0 - self.dropout_rate)
-            p_2 = tf.nn.dropout(p_2, 1.0 - self.dropout_rate)
 
         return [p_1, p_2]
 
@@ -203,6 +183,38 @@ class QANet(tf.keras.Model):
             with tf.device('/gpu:{}'.format(device)):
                 x = encoder((x, mask), training=training)
         return x
+
+    @staticmethod
+    def truncate_inputs(inputs, W):
+        in_context, in_context_unk_label,\
+            in_context_chars, in_context_mask,\
+            in_question, in_question_unk_label,\
+            in_question_chars, in_question_mask = inputs
+
+        batch_size = tf.shape(in_context)[0]
+        N = tf.reduce_max(tf.reduce_sum(
+            tf.cast(in_context_mask, tf.int32), axis=1))
+        M = tf.reduce_max(tf.reduce_sum(
+            tf.cast(in_question_mask, tf.int32), axis=1))
+        in_context = tf.slice(in_context, [0, 0], [batch_size, N])
+        in_context_unk_label = tf.slice(
+            in_context_unk_label, [0, 0], [batch_size, N])
+        in_context_chars = tf.slice(
+            in_context_chars, [0, 0, 0], [batch_size, N, W])
+        in_context_mask = tf.slice(
+            in_context_mask, [0, 0], [batch_size, N])
+        in_question = tf.slice(in_question, [0, 0], [batch_size, M])
+        in_question_unk_label = tf.slice(
+            in_question_unk_label, [0, 0], [batch_size, M])
+        in_question_chars = tf.slice(
+            in_question_chars, [0, 0, 0], [batch_size, M, W])
+        in_question_mask = tf.slice(
+            in_question_mask, [0, 0], [batch_size, M])
+
+        return N, M, in_context, in_context_unk_label,\
+            in_context_chars, in_context_mask,\
+            in_question, in_question_unk_label,\
+            in_question_chars, in_question_mask
 
 def loss_fn(model, inputs, targets, training):
     def compute_loss(labels, outputs):

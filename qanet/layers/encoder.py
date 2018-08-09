@@ -1,8 +1,9 @@
 import tensorflow as tf
 
 from .attention import MultiHeadAttention
-from .core import PositionEncoding
-from .wrappers import ResidualNormed, LayerDropped
+from .core import FeedForward, PositionEncoding
+from .layer_utils import layer_dropout
+from .wrappers import LayerNormed
 
 class Encoder(tf.keras.models.Model):
     """Encoder
@@ -30,90 +31,76 @@ class Encoder(tf.keras.models.Model):
                  ff_regularizer=None,
                  **kwargs):
         super(Encoder, self).__init__(**kwargs)
-
-        num_total_layers = num_conv_layers + 2
-        layer_idx = 0
+        self._layer_dropout_survival_prob = layer_dropout_survival_prob
+        self._dropout_rate = dropout_rate
 
         self.position_encoding = PositionEncoding()
 
         # Convolution-layer
         self.conv_layers = []
 
-        layer_idx += 1
-
         for idx in range(num_conv_layers):
-            layer = LayerDropped(
-                ResidualNormed(
-                    tf.keras.layers.SeparableConv2D(
-                        filters=dim,
-                        kernel_size=(1, filter_size),
-                        padding='same',
-                        activation='relu',
-                        depthwise_regularizer=conv_regularizer,
-                        pointwise_regularizer=conv_regularizer,
-                        bias_regularizer=conv_regularizer,
-                        activity_regularizer=conv_regularizer),
-                    dropout_rate=dropout_rate,
-                    regularizer=conv_regularizer),
-                layer_idx=layer_idx,
-                num_total_layers=num_total_layers,
-                p_L=layer_dropout_survival_prob)
+            layer = LayerNormed(
+                tf.keras.layers.SeparableConv1D(
+                    filters=dim,
+                    kernel_size=filter_size,
+                    padding='same',
+                    activation='relu',
+                    depthwise_regularizer=conv_regularizer,
+                    pointwise_regularizer=conv_regularizer,
+                    bias_regularizer=conv_regularizer,
+                    activity_regularizer=conv_regularizer),
+                dropout_rate=dropout_rate,
+                regularizer=conv_regularizer)
             self.conv_layers.append(layer)
             setattr(self, 'separable_conv-{}'.format(idx), layer)
-            layer_idx += 1
 
-        # Self-attention-layer
-        self.attention = LayerDropped(
-            ResidualNormed(
-                MultiHeadAttention(
-                    num_heads=num_heads,
-                    input_dim=dim,
-                    d_k=dim,
-                    d_v=dim,
-                    regularizer=attention_regularizer),
-                dropout_rate=dropout_rate,
+        self.attention = LayerNormed(
+            MultiHeadAttention(
+                num_heads=num_heads,
+                input_dim=dim,
+                d_k=dim,
+                d_v=dim,
                 regularizer=attention_regularizer),
-            layer_idx=layer_idx,
-            num_total_layers=num_total_layers,
-            p_L=layer_dropout_survival_prob)
+            dropout_rate=dropout_rate,
+            regularizer=attention_regularizer)
 
-        layer_idx += 1
-
-        # Feed-forward-layer
-        self.feed_forward = LayerDropped(
-            ResidualNormed(
-                tf.keras.layers.Dense(
-                    dim,
-                    activation='relu',
-                    kernel_regularizer=ff_regularizer,
-                    bias_regularizer=ff_regularizer,
-                    activity_regularizer=ff_regularizer),
-                dropout_rate=dropout_rate,
-                regularizer=ff_regularizer),
-            layer_idx=layer_idx,
-            num_total_layers=num_total_layers,
-            p_L=layer_dropout_survival_prob)
+        self.feed_forward = LayerNormed(
+            FeedForward(dim, ff_regularizer),
+            dropout_rate=dropout_rate,
+            regularizer=ff_regularizer)
 
     def call(self, inputs, training):
         x, mask = inputs
 
+        total_layers = len(self.conv_layers) + 2
+        layer_idx = 0
+
         # (batch_size, N, input_dim)
         x = self.position_encoding(x)
+        layer_idx += 1
 
-        # (batch_size, 1, N, input_dim)
-        x = tf.expand_dims(x, axis=1)
-
-        for conv in self.conv_layers:
-            # (batch_size, 1, N, dim)
-            x = conv(x, training=training)
-
-        # (batch_size, N, dim)
-        x = tf.squeeze(x, axis=1)
-
-        # (batch_size, N, dim)
-        x = self.attention([x] * 3 + [mask], training=training)
+        for idx, conv in enumerate(self.conv_layers):
+            # (batch_size, N, dim)
+            y = conv(x, training=training)
+            y = layer_dropout(x, y, layer_idx, total_layers,
+                              p_L=self._layer_dropout_survival_prob,
+                              training=training)
+            x = y
+            layer_idx += 1
 
         # (batch_size, N, dim)
-        x = self.feed_forward(x, training=training)
+        y = self.attention([x] * 3 + [mask], training=training)
+        y = layer_dropout(x, y, layer_idx, total_layers,
+                          p_L=self._layer_dropout_survival_prob,
+                          training=training)
+        x = y
+        layer_idx += 1
 
-        return x
+        # (batch_size, N, dim)
+        y = self.feed_forward(x, training=training)
+        y = layer_dropout(x, y, layer_idx, total_layers,
+                          p_L=self._layer_dropout_survival_prob,
+                          training=training)
+
+        return y

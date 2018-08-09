@@ -30,8 +30,6 @@ class WordEmbedding(tf.keras.layers.Layer):
     def build(self, input_shape):
         words_shape, word_unk_label_shape = input_shape
 
-        assert words_shape[-1] == word_unk_label_shape[-1]
-
         with tf.device('/cpu:0'):
             self._W = self.add_variable(
                 'embedding',
@@ -109,19 +107,19 @@ class CharacterEmbedding(tf.keras.layers.Layer):
                 regularizer=self._regularizer)
         self._kernel = self.add_variable(
             'kernel',
-            [1, self._filter_size, self._emb_dim, self._out_dim],
+            [self._filter_size, self._emb_dim, self._out_dim],
             initializer=self._conv_kernel_initializer,
             regularizer=self._regularizer)
         self._bias = self.add_variable(
             'bias',
-            [1, 1, 1, self._out_dim],
+            [1, 1, self._out_dim],
             initializer=self._conv_bias_initializer,
             regularizer=self._regularizer)
         super(CharacterEmbedding, self).build(input_shape)
 
     def call(self, x):
         x = tf.cast(x, tf.int32)
-        N, W = x.shape[1:]
+        N, W = tf.shape(x)[1], tf.shape(x)[2]
 
         # from BiDAF
         # Characters are embedded into vectors, which can be
@@ -135,10 +133,8 @@ class CharacterEmbedding(tf.keras.layers.Layer):
             x_ = tf.nn.embedding_lookup(self._embedding, x)
         # (batch_size * N, W, p2)
         x_ = tf.reshape(x_, [-1, W, self._emb_dim])
-        # (batch_size * N, 1, W, p2)
-        x_ = tf.expand_dims(x_, 1)
-        # (batch_size * N, 1, W - filter_size + 1, p2)
-        x_ = tf.nn.conv2d(x_, self._kernel, [1, 1, 1, 1], 'VALID') + self._bias
+        # (batch_size * N, W - filter_size + 1, p2)
+        x_ = tf.nn.conv1d(x_, self._kernel, 1, 'VALID') + self._bias
         # (batch_size, N, W - filter_size + 1, p2)
         x_ = tf.reshape(x_, [-1, N, W - self._filter_size + 1, self._out_dim])
         # (batch_size, N, p2)
