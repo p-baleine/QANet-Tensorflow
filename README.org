@@ -2,7 +2,7 @@
 
 An implementation of [[https://arxiv.org/abs/1804.09541][QANet]] with [[https://www.tensorflow.org/][Tensorflow]] and [[https://keras.io/][Keras]].
 
-*This repository is work in progress.*
+This implementation reaches EM/F1 = 66/77 in 50k steps. (The original paper reaches EM/F1 = 73.6/82.7 in 150k steps. I think there is still room for improvement.)
 
 ** Requirements
 
