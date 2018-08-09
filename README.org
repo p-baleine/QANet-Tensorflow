@@ -1,4 +1,4 @@
-#+TITLE: keras-QANet
+#+TITLE: QANet-Tensorflow
 
 An implementation of [[https://arxiv.org/abs/1804.09541][QANet]] with [[https://www.tensorflow.org/][Tensorflow]] and [[https://keras.io/][Keras]].
 
