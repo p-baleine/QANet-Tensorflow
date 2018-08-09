@@ -75,8 +75,8 @@ def create_iterator(data, hparams, do_shuffle, repeat_count=None,
         max_context_length = hparams.max_context_length
         max_question_length = hparams.max_question_length
     else:
-        max_context_length = 1e4
-        max_question_length = 1e4
+        max_context_length = int(1e4)
+        max_question_length = int(1e4)
 
     id, title, inputs, labels = create_transposed_data(
         data,
