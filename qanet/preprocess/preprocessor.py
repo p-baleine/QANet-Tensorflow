@@ -49,17 +49,27 @@ class Label(namedtuple('Label', [
     def from_raw_array(cls, arr):
         return Label(*arr)
 
+class PaddedInput(namedtuple('PaddedInput', [
+        'context',
+        'context_unk_label',
+        'context_chars',
+        'question',
+        'question_unk_label',
+        'question_chars'])):
+    __slots__ = ()
+
 class Preprocessor(object):
     """Preprocess `ExpandedArticle`.
     """
 
-    def __init__(self, word2vec, annotate, normalize=identity,
-                 char_count_threshold=0):
+    def __init__(self, word2vec, annotate, max_word_length,
+                 normalize=identity, char_count_threshold=0):
         self._word2vec = word2vec
         self._word_dict = CategoricalVocabulary(normalize=normalize)
         self._char_dict = CategoricalVocabulary(normalize=normalize)
         self._annotate = annotate
         self._vectors = None
+        self._max_word_length = max_word_length
         self._char_count_threshold = char_count_threshold
 
     def fit(self, articles):
@@ -97,13 +107,21 @@ class Preprocessor(object):
         self._char_dict.freeze()
         self._word_dict.freeze()
 
-    def transform(self, data):
+    def transform(self, data, max_context_length, max_question_length):
         output = []
+
+        def is_too_long(context, question):
+            return (len(context) > max_context_length
+                    or len(question) > max_question_length)
 
         for datum in data:
             id, title, context, question, answers = datum
             annotated_context = self._annotate(context)
             annotated_question = self._annotate(question)
+
+            if is_too_long(annotated_context, annotated_question):
+                logger.warn('Filter out too long datum, {}, {}'.format(id, title))
+                continue
 
             y_list = self._transform_label(annotated_context, answers)
 
@@ -113,11 +131,13 @@ class Preprocessor(object):
                             'article_title: {}, id: {}'.format(title, id))
                 continue
 
+            x = self._transform_input(annotated_context, annotated_question)
+
             output.append(TransformedOutput(
                 id=id,
                 title=title,
-                x=self._transform_input(
-                    annotated_context, annotated_question),
+                x=_padding(x, max_context_length, max_question_length,
+                           self._max_word_length),
                 y_list=y_list))
 
         return output
@@ -196,3 +216,34 @@ class Preprocessor(object):
                         raw_text=answer.text))
 
         return labels
+
+def _padding(datum,
+             max_context_length,
+             max_question_length,
+             max_word_length,
+             pad_id=CategoricalVocabulary.PAD_ID):
+    """Padding `datum`
+    """
+
+    def pad(x, max_length):
+        return np.array(x[:max_length] + [pad_id] * (max_length - len(x)))
+
+    def pad_chars(x, max_sentence_length):
+        return np.array(
+            [pad(x_[:max_sentence_length], max_word_length) for x_ in x]
+            + [[pad_id] * max_word_length] * (max_sentence_length - len(x)))
+
+    assert len(datum.context) <= max_context_length
+    assert len(datum.question) <= max_question_length
+
+    return PaddedInput(
+        context=pad(datum.context, max_context_length),
+        context_unk_label=pad(
+            datum.context_unk_label, max_context_length),
+        context_chars=pad_chars(
+            datum.context_chars, max_context_length),
+        question=pad(datum.question, max_question_length),
+        question_unk_label=pad(
+            datum.question_unk_label, max_question_length),
+        question_chars=pad_chars(
+            datum.question_chars, max_question_length))

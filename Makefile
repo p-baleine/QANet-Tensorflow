@@ -6,8 +6,8 @@ DEV_DATA ?= data/dev-v1.1.json
 GLOVE ?= word2vec/glove.6B.300d.txt
 
 DATA_SAVE_DIR = data/preprocessed_$(shell date +'%Y%m%d%H%M')
-PREPROCESSED_TRAIN_DATA = $(DATA_SAVE_DIR)/train.json
-PREPROCESSED_DEV_DATA = $(DATA_SAVE_DIR)/dev.json
+PREPROCESSED_TRAIN_DATA = $(DATA_SAVE_DIR)/train.tfrecord
+PREPROCESSED_DEV_DATA = $(DATA_SAVE_DIR)/dev.tfrecord
 GLOVE_WORD2VEC = word2vec/glove.6B.300d.word2vec.bin
 
 # Variables for training.
