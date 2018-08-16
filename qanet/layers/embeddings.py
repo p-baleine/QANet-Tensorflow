@@ -30,12 +30,11 @@ class WordEmbedding(tf.keras.layers.Layer):
     def build(self, input_shape):
         words_shape, word_unk_label_shape = input_shape
 
-        with tf.device('/cpu:0'):
-            self._W = self.add_variable(
-                'embedding',
-                [self._V, self._dim],
-                initializer=tf.constant_initializer(self._embedding_matrix),
-                trainable=False)
+        self._W = self.add_variable(
+            'embedding',
+            [self._V, self._dim],
+            initializer=tf.constant_initializer(self._embedding_matrix),
+            trainable=False)
 
         # All the out-of-vocabulary words are mapped to an <UNK> token,
         # whose embedding is trainable with random initialization.
@@ -54,12 +53,11 @@ class WordEmbedding(tf.keras.layers.Layer):
         word_unk_label = tf.cast(word_unk_label, tf.bool)
 
         # (batch_size, N, dim)
-        with tf.device('/cpu:0'):
-            return tf.where(
-                tf.tile(tf.expand_dims(word_unk_label, -1), [1, 1, self._dim]),
-                tf.nn.embedding_lookup(
-                    self._W_unk, tf.zeros_like(word_unk_label, dtype=tf.int32)),
-                tf.nn.embedding_lookup(self._W, words))
+        return tf.where(
+            tf.tile(tf.expand_dims(word_unk_label, -1), [1, 1, self._dim]),
+            tf.nn.embedding_lookup(
+                self._W_unk, tf.zeros_like(word_unk_label, dtype=tf.int32)),
+            tf.nn.embedding_lookup(self._W, words))
 
     def compute_output_shape(self, input_shape):
         word_shape, _ = input_shape
@@ -99,12 +97,11 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         super(CharacterEmbedding, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        with tf.device('/cpu:0'):
-            self._embedding = self.add_variable(
-                'embedding',
-                [self._vocab_size, self._emb_dim],
-                initializer=self._embedding_initializer,
-                regularizer=self._regularizer)
+        self._embedding = self.add_variable(
+            'embedding',
+            [self._vocab_size, self._emb_dim],
+            initializer=self._embedding_initializer,
+            regularizer=self._regularizer)
         self._kernel = self.add_variable(
             'kernel',
             [self._filter_size, self._emb_dim, self._out_dim],
@@ -129,8 +126,7 @@ class CharacterEmbedding(tf.keras.layers.Layer):
         # width to obtain a fixed-size vector for each word.
 
         # (batch_size, N, W, p2)
-        with tf.device('/cpu:0'):
-            x_ = tf.nn.embedding_lookup(self._embedding, x)
+        x_ = tf.nn.embedding_lookup(self._embedding, x)
         # (batch_size * N, W, p2)
         x_ = tf.reshape(x_, [-1, W, self._emb_dim])
         # (batch_size * N, W - filter_size + 1, p2)
