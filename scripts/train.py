@@ -20,9 +20,8 @@ import tensorflow as tf
 import qanet.model as qanet_model
 import qanet.data_utils as data_util
 
-from qanet.data_utils import PaddedInput
-from qanet.model_utils import create_iterator, get_training_session_run_hooks
-from qanet.model_utils import load_data, load_embedding, load_hparams
+from qanet.model_utils import create_dataset, get_training_session_run_hooks
+from qanet.model_utils import load_embedding, load_hparams
 from qanet.model_utils import monitored_session
 from qanet.preprocess import Preprocessor
 
@@ -34,7 +33,8 @@ tf.logging.set_verbosity(tf.logging.INFO)
 @click.option('--data', type=click.Path(exists=True))
 @click.option('--hparams', type=click.Path(exists=True), default=None)
 @click.option('--save-path', type=click.Path(exists=True))
-def main(data, hparams, save_path):
+@click.option('--save-steps', type=click.INT, default=600)
+def main(data, hparams, save_path, save_steps):
     processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))
     hparams = load_hparams(
         save_path, hparams_path=hparams, preprocessor=processor)
@@ -42,19 +42,26 @@ def main(data, hparams, save_path):
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))
 
-    logger.info('Loading data...')
+    logger.info('Load embedding...')
 
-    train_data, dev_data = load_data(data)
-    _, _, train_iterator, train_feed_dict = create_iterator(
-        train_data, hparams, do_shuffle=True, repeat_count=hparams.epochs)
-    _, _, dev_iterator, dev_feed_dict = create_iterator(
-        dev_data, hparams, do_shuffle=False, repeat_count=-1)
     embedding = load_embedding(data)
 
     logger.info('Preparing model...')
 
-    train_inputs, train_labels = train_iterator.get_next()
-    dev_inputs, dev_labels = dev_iterator.get_next()
+    batch_size = hparams.batch_size
+    train_file = os.path.join(data, 'train.tfrecord')
+    dev_file = os.path.join(data, 'dev.tfrecord')
+
+    train_dataset = create_dataset(train_file, batch_size, do_shuffle=True,
+                                   repeat_count=hparams.epochs)
+    dev_dataset = create_dataset(dev_file, batch_size, do_shuffle=False,
+                                 repeat_count=-1)
+
+    train_iterator = train_dataset.make_one_shot_iterator()
+    dev_iterator = dev_dataset.make_one_shot_iterator()
+
+    _, train_inputs, train_labels = train_iterator.get_next()
+    _, dev_inputs, dev_labels = dev_iterator.get_next()
 
     model = qanet_model.QANet(embedding, hparams)
     global_step = tf.train.get_or_create_global_step()
@@ -66,6 +73,7 @@ def main(data, hparams, save_path):
         beta1=0.8,
         beta2=0.999,
         epsilon=1e-7)
+
     train_loss = qanet_model.loss_fn(
         model, train_inputs, train_labels, training=True)
 
@@ -82,12 +90,12 @@ def main(data, hparams, save_path):
     apply_gradient_op = optimizer.apply_gradients(
         zip(clipped_grads, tvars), global_step=global_step)
     train_acc = qanet_model.accuracy_fn(
-        model, train_inputs, train_labels, hparams.batch_size, training=True)
+        model, train_inputs, train_labels, batch_size, training=True)
 
     dev_loss = qanet_model.loss_fn(
         model, dev_inputs, dev_labels, training=False)
     dev_acc = qanet_model.accuracy_fn(
-        model, dev_inputs, dev_labels, hparams.batch_size, training=False)
+        model, dev_inputs, dev_labels, batch_size, training=False)
 
     if hparams.ema_decay < 1.0:
         # Apply exponential moving average.
@@ -97,6 +105,27 @@ def main(data, hparams, save_path):
             train_op = ema.apply(tf.trainable_variables())
     else:
         train_op = apply_gradient_op
+
+    # Session run hooks.
+
+    scaffold = tf.train.Scaffold()
+
+    hooks = [
+        tf.train.NanTensorHook(train_loss),
+        tf.train.StepCounterHook(
+            output_dir=save_path, every_n_steps=10),
+        tf.train.LoggingTensorHook(
+            {'train_loss': train_loss, 'dev_loss': dev_loss},
+            every_n_iter=10),
+        tf.train.CheckpointSaverHook(
+            save_path,
+            save_steps=save_steps,
+            scaffold=scaffold),
+        tf.train.SummarySaverHook(
+            output_dir=save_path,
+            save_steps=100,
+            scaffold=scaffold),
+    ]
 
     tf.summary.scalar('train_loss', train_loss)
     tf.summary.scalar('dev_loss', dev_loss)
@@ -110,16 +139,9 @@ def main(data, hparams, save_path):
 
     logger.info('Start training...')
 
-    scaffold = tf.train.Scaffold()
-    steps_per_epoch = len(train_data) // hparams.batch_size
-    hooks = get_training_session_run_hooks(
-        save_path, train_loss, dev_loss, scaffold, steps_per_epoch,
-        train_iterator, train_feed_dict,
-        dev_iterator, dev_feed_dict)
-
     with monitored_session(save_path, scaffold, hooks=hooks) as sess:
         while not sess.should_stop():
-            sess.run([train_op, merged])
+            sess.run(train_op)
 
 def get_scheduled_learning_rate(hparams, global_step):
     return tf.minimum(

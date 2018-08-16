@@ -24,9 +24,8 @@ import squad
 
 import qanet.model as qanet_model
 
-from qanet.model_utils import DatasetInitializerHook
-from qanet.model_utils import create_iterator, get_answer_spane
-from qanet.model_utils import load_data, load_embedding, load_hparams
+from qanet.model_utils import create_dataset, get_answer_spane
+from qanet.model_utils import load_embedding, load_hparams
 from qanet.model_utils import monitored_session
 from qanet.preprocess import annotate
 from qanet.preprocess import expand_article
@@ -47,17 +46,19 @@ def main(data, save_path, raw_data_file, use_ema):
     logger.info('Hyper parameters:')
     logger.info(json.dumps(json.loads(hparams.to_json()), indent=2))
 
-    logger.info('Loading data...')
+    logger.info('Load embedding...')
 
-    _, dev_data = load_data(data)
     embedding = load_embedding(data)
 
-    id, _, iterator, feed_dict = create_iterator(
-        dev_data, hparams, do_shuffle=False, repeat_count=None,
-        remove_longer_data=False)
-    inputs, _ = iterator.get_next()
-
     logger.info('Preparing model...')
+
+    dev_dataset = create_dataset(
+        os.path.join(data, 'dev.tfrecord'),
+        hparams.batch_size,
+        do_shuffle=False)
+
+    dev_iterator = dev_dataset.make_one_shot_iterator()
+    context_op, inputs, _ = dev_iterator.get_next()
 
     model = qanet_model.QANet(embedding, hparams)
 
@@ -73,16 +74,16 @@ def main(data, save_path, raw_data_file, use_ema):
     else:
         scaffold = tf.train.Scaffold()
 
+    id = []
     starts = []
     ends = []
 
-    with monitored_session(
-            save_path, scaffold,
-            hooks=[DatasetInitializerHook(iterator, feed_dict)]) as sess:
+    with monitored_session(save_path, scaffold) as sess:
         while not sess.should_stop():
-            start, end = sess.run(prediction_op)
-            starts += start.tolist()
-            ends += end.tolist()
+            context, prediction = sess.run([context_op, prediction_op])
+            id += [x.decode('utf-8') for x in context['id'].tolist()]
+            starts += prediction[0].tolist()
+            ends += prediction[1].tolist()
 
     # TODO Restore without the filename.
     processor = Preprocessor.restore(os.path.join(data, 'preprocessor.pickle'))

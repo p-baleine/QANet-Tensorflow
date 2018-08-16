@@ -7,7 +7,6 @@ import pickle
 import tensorflow as tf
 
 from .preprocess import TransformedOutput
-from .data_utils import create_transposed_data
 
 logger = logging.getLogger(__name__)
 
@@ -36,15 +35,6 @@ def load_hparams(save_path, preprocessor=None, hparams_path=None):
 
     return hparams
 
-def load_data(data_path):
-    with open(os.path.join(data_path, 'train.json')) as f:
-        train_data = json.load(f)
-    with open(os.path.join(data_path, 'dev.json')) as f:
-        dev_data = json.load(f)
-    return (
-        [TransformedOutput.from_raw_array(d) for d in train_data],
-        [TransformedOutput.from_raw_array(d) for d in dev_data])
-
 def load_embedding(data_path):
     return np.load(os.path.join(data_path, 'vectors.npy'))
 
@@ -69,47 +59,47 @@ def get_answer_spane(start_preds, end_preds):
 
     return best_span[0], best_span[1], best_score
 
-def create_iterator(data, hparams, do_shuffle, repeat_count=None,
-                    remove_longer_data=True):
-    if remove_longer_data:
-        max_context_length = hparams.max_context_length
-        max_question_length = hparams.max_question_length
-    else:
-        max_context_length = int(1e4)
-        max_question_length = int(1e4)
+def parse_tfrecord(record):
+    context, feature_lists = tf.parse_single_sequence_example(
+        serialized=record,
+        context_features={
+            'id': tf.FixedLenFeature([], tf.string),
+        },
+        sequence_features={
+            'context': tf.FixedLenSequenceFeature([], tf.int64),
+            'context_unk_label': tf.FixedLenSequenceFeature([], tf.int64),
+            'context_chars': tf.FixedLenSequenceFeature([16], tf.int64),
+            'question': tf.FixedLenSequenceFeature([], tf.int64),
+            'question_unk_label': tf.FixedLenSequenceFeature([], tf.int64),
+            'question_chars': tf.FixedLenSequenceFeature([16], tf.int64),
+            'answer_start': tf.FixedLenSequenceFeature([], tf.int64),
+            'answer_end': tf.FixedLenSequenceFeature([], tf.int64),
+        })
+    return (context,
+            (feature_lists['context'],
+             feature_lists['context_unk_label'],
+             feature_lists['context_chars'],
+             feature_lists['question'],
+             feature_lists['question_unk_label'],
+             feature_lists['question_chars'],
+            ),
+            (feature_lists['answer_start'],
+             feature_lists['answer_end']))
 
-    id, title, inputs, labels = create_transposed_data(
-        data,
-        max_context_length=max_context_length,
-        max_question_length=max_question_length,
-        max_word_length=hparams.max_word_length)
-
-    # Create iterator.
-    input_placeholders = inputs._replace(**dict(
-        (k, tf.placeholder(d.dtype, d.shape))
-        for k, d in zip(inputs._fields, inputs)))
-    label_placeholders = tuple(
-        tf.placeholder(d.dtype, d.shape) for d in labels)
-
-    dataset = tf.data.Dataset.from_tensor_slices(
-        (input_placeholders, label_placeholders))
+def create_dataset(tfrecord_path, batch_size,
+                   do_shuffle=False, repeat_count=None):
+    dataset = tf.data.TFRecordDataset(tfrecord_path)
+    dataset = dataset.map(parse_tfrecord)
 
     if do_shuffle:
         dataset = dataset.shuffle(buffer_size=10000)
 
-    dataset = dataset.batch(hparams.batch_size)
-
     if repeat_count is not None:
         dataset = dataset.repeat(repeat_count)
 
-    iterator = dataset.make_initializable_iterator()
+    dataset = dataset.batch(batch_size)
 
-    # Create feed_dict.
-    feed_dict = dict((p, d) for p, d in zip(
-        input_placeholders + label_placeholders,
-        inputs + labels))
-
-    return id, title, iterator, feed_dict
+    return dataset
 
 @contextlib.contextmanager
 def monitored_session(save_path, scaffold, hooks=[]):
@@ -122,95 +112,3 @@ def monitored_session(save_path, scaffold, hooks=[]):
             session_creator=session_creator,
             hooks=hooks) as sess:
         yield sess
-
-def get_training_session_run_hooks(
-        save_path,
-        train_loss,
-        dev_loss,
-        scaffold,
-        steps_per_epoch,
-        train_iterator,
-        train_feed_dict,
-        dev_iterator,
-        dev_feed_dict,
-        log_steps=10,
-        save_steps=600,
-        summary_steps=100):
-    train_iterator_init_hook = DatasetInitializerHook(
-        train_iterator, train_feed_dict)
-    dev_iterator_init_hook = DatasetInitializerHook(
-        dev_iterator, dev_feed_dict)
-    nan_hook = tf.train.NanTensorHook(train_loss)
-    checkpoint_hook = tf.train.CheckpointSaverHook(
-        save_path,
-        save_steps=save_steps,
-        scaffold=scaffold)
-    counter_hook = tf.train.StepCounterHook(
-        output_dir=save_path,
-        every_n_steps=log_steps)
-    train_logging_hook = tf.train.LoggingTensorHook(
-        {'train_loss': train_loss},
-        every_n_iter=log_steps)
-    all_logging_hook = tf.train.LoggingTensorHook(
-        {'train_loss': train_loss, 'dev_loss': dev_loss},
-        every_n_iter=summary_steps)
-    summary_hook = tf.train.SummarySaverHook(
-        scaffold=scaffold,
-        output_dir=save_path,
-        save_steps=summary_steps)
-    log_epoch_hook = LogEpochHook(steps_per_epoch)
-
-    return [
-        train_iterator_init_hook,
-        dev_iterator_init_hook,
-        nan_hook,
-        checkpoint_hook,
-        counter_hook,
-        train_logging_hook,
-        all_logging_hook,
-        summary_hook,
-        log_epoch_hook]
-
-class LogEpochHook(tf.train.SessionRunHook):
-    """Hook that just output epoch count."""
-
-    def __init__(self, steps_per_epoch):
-        self._steps_per_epoch = steps_per_epoch
-        self._timer = tf.train.SecondOrStepTimer(
-            every_steps=1) # dummy parameter
-
-    def begin(self):
-        self._global_step_tensor = tf.train.get_global_step()
-
-        if self._global_step_tensor is None:
-            raise RuntimeError(
-                'Global step should be created to use LogEpochHook')
-
-    def before_run(self, run_context):
-        return tf.train.SessionRunArgs(self._global_step_tensor)
-
-    def after_run(self, run_context, run_values):
-        global_step = run_values.results
-
-        if global_step != 0 and global_step % self._steps_per_epoch == 0:
-            elapsed_time, _ = self._timer.update_last_triggered_step(global_step)
-            logger.info('Epoch {} ({} sec)'.format(
-                global_step // self._steps_per_epoch,
-                elapsed_time))
-
-class DatasetInitializerHook(tf.train.SessionRunHook):
-    """Hook that initialize an iterator.
-
-    See: https://github.com/tensorflow/tensorflow/issues/12859#issuecomment-348251009
-    """
-
-    def __init__(self, iterator, feed_dict):
-        self._iterator = iterator
-        self._feed_dict = feed_dict
-
-    def begin(self):
-        self._initializer = self._iterator.initializer
-
-    def after_create_session(self, session, coord):
-        del coord
-        session.run(self._initializer, self._feed_dict)

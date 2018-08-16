@@ -186,12 +186,13 @@ class QANet(tf.keras.Model):
 
     @staticmethod
     def truncate_inputs(inputs, W):
-        in_context, in_context_unk_label,\
-            in_context_chars, in_context_mask,\
-            in_question, in_question_unk_label,\
-            in_question_chars, in_question_mask = inputs
+        in_context, in_context_unk_label, in_context_chars,\
+            in_question, in_question_unk_label, in_question_chars = inputs
 
         batch_size = tf.shape(in_context)[0]
+        in_context_mask = tf.cast(in_context, tf.bool)
+        in_question_mask = tf.cast(in_question, tf.bool)
+
         N = tf.reduce_max(tf.reduce_sum(
             tf.cast(in_context_mask, tf.int32), axis=1))
         M = tf.reduce_max(tf.reduce_sum(
@@ -222,7 +223,7 @@ def loss_fn(model, inputs, targets, training):
             tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=labels, logits=outputs))
 
-    l1, l2 = targets
+    l1, l2 = tf.squeeze(targets[0]), tf.squeeze(targets[1])
     o1, o2 = model(inputs, training=training)
 
     return compute_loss(l1, o1) + compute_loss(l2, o2)
@@ -232,7 +233,7 @@ def accuracy_fn(model, inputs, targets, batch_size, training):
         return tf.reduce_sum(tf.cast(
             tf.equal(predictions, labels), dtype=tf.float32)) / batch_size
 
-    l1, l2 = targets
+    l1, l2 = tf.squeeze(targets[0]), tf.squeeze(targets[1])
     l1, l2 = tf.cast(l1, tf.int64), tf.cast(l2, tf.int64)
     o1, o2 = model(inputs, training=training)
     p1 = tf.argmax(o1, axis=1, output_type=tf.int64)
