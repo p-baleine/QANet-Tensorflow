@@ -18,9 +18,8 @@ import os
 import tensorflow as tf
 
 import qanet.model as qanet_model
-import qanet.data_utils as data_util
 
-from qanet.model_utils import create_dataset, get_training_session_run_hooks
+from qanet.model_utils import create_dataset
 from qanet.model_utils import load_embedding, load_hparams
 from qanet.model_utils import monitored_session
 from qanet.preprocess import Preprocessor
