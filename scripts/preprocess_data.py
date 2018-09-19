@@ -33,13 +33,16 @@ logger = logging.getLogger(__name__)
 @click.option('--out', type=click.Path(exists=True))
 @click.option('--max-context-length', type=click.INT, default=400)
 @click.option('--max-question-length', type=click.INT, default=30)
+@click.option('--max-answer-length', type=click.INT, default=30)
 @click.option('--dev-max-context-length', type=click.INT, default=1000)
 @click.option('--dev-max-question-length', type=click.INT, default=100)
+@click.option('--dev-max-answer-length', type=click.INT, default=100)
 @click.option('--max-word-length', type=click.INT, default=16)
 @click.option('--char-count-threshold', type=click.INT, default=0)
-def main(train_data, dev_data, glove, out, max_context_length,
-         max_question_length, max_word_length, dev_max_context_length,
-         dev_max_question_length, char_count_threshold):
+def main(train_data, dev_data, glove, out,
+         max_context_length, max_question_length, max_answer_length,
+         dev_max_context_length, dev_max_question_length, dev_max_answer_length,
+         max_word_length, char_count_threshold):
     logger.info('Loading glove file...')
     wv = KeyedVectors.load_word2vec_format(glove, binary=True)
 
@@ -72,14 +75,16 @@ def main(train_data, dev_data, glove, out, max_context_length,
     train_data = processor.transform(
         train_data,
         max_context_length=max_context_length,
-        max_question_length=max_question_length)
+        max_question_length=max_question_length,
+        max_answer_length=max_answer_length)
     convert_to(train_data, os.path.join(out, 'train.tfrecord'))
 
     logger.info('Transforming dev data...')
     dev_data = processor.transform(
         dev_data,
         max_context_length=dev_max_context_length,
-        max_question_length=dev_max_question_length)
+        max_question_length=dev_max_question_length,
+        max_answer_length=dev_max_answer_length)
     convert_to(dev_data, os.path.join(out, 'dev.tfrecord'))
 
 def convert_to(data_set, file_path):

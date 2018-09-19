@@ -107,7 +107,8 @@ class Preprocessor(object):
         self._char_dict.freeze()
         self._word_dict.freeze()
 
-    def transform(self, data, max_context_length, max_question_length):
+    def transform(self, data, max_context_length, max_question_length,
+                  max_answer_length):
         output = []
 
         def is_too_long(context, question):
@@ -129,6 +130,11 @@ class Preprocessor(object):
                 # Ignore the qas if it dose not have any answers.
                 logger.warn('The question dose not have answers, '
                             'article_title: {}, id: {}'.format(title, id))
+                continue
+
+            if y_list[0].answer_end - y_list[0].answer_start > max_answer_length:
+                logger.warn('Filter long answer, {}, {}'.format(
+                    id, y_list[0].raw_text))
                 continue
 
             x = self._transform_input(annotated_context, annotated_question)
